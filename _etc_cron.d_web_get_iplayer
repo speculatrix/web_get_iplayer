@@ -1,8 +1,11 @@
 #
-# cron-jobs for web_get_iplayer
+# cron-job for web_get_iplayer
+#
+# don't worry, this is a one-time setup thing
 #
 # copy this file as /etc/cron.d/web_get_iplayer; change the wwwrun to the 
-# ID that your web server runs as
+# ID that your web server runs as, change the command to be where you put
+# the web_get_iplayer.cron.sh script.
 
 MAILTO=root
 
