@@ -1,0 +1,10 @@
+#
+# cron-jobs for web_get_iplayer
+#
+# copy this file as /etc/cron.d/web_get_iplayer; change the wwwrun to the 
+# ID that your web server runs as
+
+MAILTO=root
+
+*/1 * * * *     wwwrun  /var/www/public/cgi-bin/web_get_iplayer.cron.sh
+
