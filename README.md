@@ -6,4 +6,5 @@ in theory, it will tell you what to do, what directories to create and what perm
 
 Note that if it doesn't run at all, run it at the command line to check python has all the libraries it needs.
 
-You also need to have the get_iplayer.pl script installed too.
+You also need to have the get_iplayer.pl script installed too, which you get from 
+https://sourceforge.net/projects/get-iplayer/
