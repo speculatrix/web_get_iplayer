@@ -8,3 +8,10 @@ Note that if it doesn't run at all, run it at the command line to check python h
 
 You also need to have the get_iplayer.pl script installed too, which you get from 
 https://sourceforge.net/projects/get-iplayer/
+
+
+Then set up cron so as to call the wrapper script; you copy the _etc_cron.d_web_get_iplayer to /etc/cron.d
+and tweak it to suit your setup. Then make web_get_iplayer.cron.sh executable. These together cause queued
+files to be downloaded.
+
+Check /var/lib/web_get_iplayer/ for files and logs etc.
