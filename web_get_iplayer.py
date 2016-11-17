@@ -300,9 +300,20 @@ def check_load_config_file():
         config_bad = 1
 
 
+    # check that the get_iplayer program exists
+    get_iplayer_binary = my_settings.get(SETTINGS_SECTION, 'get_iplayer')
+    if not os.path.isfile(get_iplayer_binary):
+        print "Error, get_iplayer program wasn't found.\nPlease fix the configuration for get_iplayer below, or download the program and make it executable with the following commands.\n# sudo wget -O %s https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer\n# sudo chmod ugo+x %s" % (get_iplayer_binary, get_iplayer_binary, )
+        config_bad = 1
+    # check that the get_iplayer program is executable
+    if os.path.isfile(get_iplayer_binary) and not os.access(get_iplayer_binary, os.X_OK):
+        print "Error, get_iplayer program isn't executable.\nMake it executable with the following command:\n# sudo chmod ugo+x %s" % (get_iplayer_binary, )
+
+
+
     # need swffile for the rtmpdump program to work
     swffile = expanduser("~") + '/' + '.swfinfo'
-    if not os.path.isfile(swffile):
+    if os.path.isfile(get_iplayer_binary) and not os.path.isfile(swffile):
         print 'Error, file %s doesn\'t appear to exist.\nPlease do the following - needs root:\n# sudo touch %s && sudo chgrp %d: %s && sudo chmod g+w %s\n' % (swffile, swffile, my_egroup_id, swffile, swffile, )
 
 
