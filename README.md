@@ -1,28 +1,49 @@
 # web_get_iplayer
 a python wrapper to provide a web interface to get_iplayer
 
-Put the web_get_iplayer.py in your CGI-BIN directory, make it executable,
-and then access it via your web browser. It should tell you what to do,
+
+=Installation - part 1 - the web interface
+
+* start a root shell
+* change to your cgi-bin directory, e.g.
+  cd /var/www/cgi-bin
+* fetch the program with
+  wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_get_iplayer.py
+* make executable
+  chmod ugo+x web_get_iplayer.py
+
+Then access with your web browser, e.g. http://localhost/cgi-bin/web_get_iplayer.py
+
+You might have to enable traditional cgi-bin behaviour in your apache/httpd server.
+
+The program analyses its environment and will tell you what to do,
 e.g. what directories to create and what permissions to give them.
 
 Note that if it doesn't run at all, run it at the command line to check
 python has all the libraries it needs.
 
-You also need to have the get_iplayer.pl script installed too, which you
-get from https://sourceforge.net/projects/get-iplayer/
 
+=Installation - part 2 - the cron queue runner
 
-Then set up cron so as to call the wrapper script.
-* Copy the _etc_cron.d_web_get_iplayer to /etc/cron.d
-  and tweak it to suit your setup.
-* Make web_get_iplayer.cron.sh executable.
+Set up cron so as to call the wrapper script.
+
+* start a root shell
+* change directory to the cgi-bin directory
+* get the wrapper script with this command:
+  wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_get_iplayer.cron.sh
+* and make it executable
+  chmod ugo+x web_get_iplayer.cron.sh 
+* get the cron table file with
+  wget -O /etc/cron.d/web_get_iplayer https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/_etc_cron.d_web_get_iplayer
+* tweak the /etc/cron.d/web_get_iplayer if your cgi-bin directory is different
 
 These together run the download queue. You could change the cron tab to run
-at night if your bandwidth is limited, and change the frequency at which it
-runs.
+at night if your bandwidth is cheaper then, or change the frequency at which it
+runs if you want to allow your server to idle more. 
 
 
-In case of problems, check files in /var/lib/web_get_iplayer/
+In case of problems, check files in /var/lib/web_get_iplayer/ which is where
+all the queues and logs are kept.
 
 
 If you want to play the FLV files on other devices, the flv-to-divx.sh
