@@ -31,13 +31,16 @@ script should be put in your /usr/local/bin and made executable
 
 
 = Known problems
+
 * sometimes programs don't show up in search but do on
   http://www.bbc.co.uk/iplayer and you have to copy the program ID
 * audio/radio search is poor at finding programs; reverse engineering
   the http API is not trivial
 
 
+
 = How it works
+
 * the program uses the same web/http API as the android app for searching
 * simple json files are used for the queue files
 * a cron job runs the queue
