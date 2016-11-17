@@ -2,7 +2,7 @@
 a python wrapper to provide a web interface to get_iplayer
 
 
-*Installation - part 1 - the web interface*
+_Installation - part 1 - the web interface_
 
 * start a root shell
 * change to your cgi-bin directory, e.g.
@@ -23,7 +23,7 @@ Note that if it doesn't run at all, run it at the command line to check
 python has all the libraries it needs.
 
 
-*Installation - part 2 - the cron queue runner*
+_Installation - part 2 - the cron queue runner_
 
 Set up cron so as to call the wrapper script.
 
@@ -45,7 +45,7 @@ In case of problems, check files in /var/lib/web_get_iplayer/ which is where
 all the queues and logs are kept.
 
 
-*Playback*
+_Playback_
 
 You should be able to play back the downloaded files with mplayer, vlc, ffplay etc.
 
@@ -56,7 +56,7 @@ script should be put in your /usr/local/bin and made executable.
 
 
 
-*Known problems*
+_Known problems_
 
 * sometimes programs don't show up in search but do on
   http://www.bbc.co.uk/iplayer and you have to copy the program ID
@@ -65,7 +65,7 @@ script should be put in your /usr/local/bin and made executable.
 
 
 
-*How it works*
+_How it works_
 
 * the program uses the same web/http API as the android app for searching
 * simple json files are used for the queue files
