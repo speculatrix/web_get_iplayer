@@ -2,7 +2,7 @@
 a python wrapper to provide a web interface to get_iplayer
 
 
-=Installation - part 1 - the web interface
+*Installation - part 1 - the web interface*
 
 * start a root shell
 * change to your cgi-bin directory, e.g.
@@ -23,7 +23,7 @@ Note that if it doesn't run at all, run it at the command line to check
 python has all the libraries it needs.
 
 
-=Installation - part 2 - the cron queue runner
+*Installation - part 2 - the cron queue runner*
 
 Set up cron so as to call the wrapper script.
 
@@ -41,17 +41,22 @@ These together run the download queue. You could change the cron tab to run
 at night if your bandwidth is cheaper then, or change the frequency at which it
 runs if you want to allow your server to idle more. 
 
-
 In case of problems, check files in /var/lib/web_get_iplayer/ which is where
 all the queues and logs are kept.
 
 
+*Playback*
+
+You should be able to play back the downloaded files with mplayer, vlc, ffplay etc.
+
+If you want to use the embedded player, you need the JWplayer. Instructions on downloading and setting this up are coming soon.
+
 If you want to play the FLV files on other devices, the flv-to-divx.sh
-script should be put in your /usr/local/bin and made executable
+script should be put in your /usr/local/bin and made executable.
 
 
 
-= Known problems
+*Known problems*
 
 * sometimes programs don't show up in search but do on
   http://www.bbc.co.uk/iplayer and you have to copy the program ID
@@ -60,9 +65,13 @@ script should be put in your /usr/local/bin and made executable
 
 
 
-= How it works
+*How it works*
 
 * the program uses the same web/http API as the android app for searching
 * simple json files are used for the queue files
 * a cron job runs the queue
-* the get_iplayer tool actually does the download https://github.com/get-iplayer/get_iplayer
+* the get_iplayer tool actually does the download, see
+  https://github.com/get-iplayer/get_iplayer
+
+
+
