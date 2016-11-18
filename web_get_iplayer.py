@@ -1,6 +1,6 @@
 #!/usr/bin/python -u
 """
-Version: 20160408
+Version: 20161118
 
 This script operates in two modes:
  1/ a web wrapper round get_iplayer, written for interoperability testing, and to facilitate people with disabilities being able to use iplayer
@@ -104,6 +104,12 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'uriFlvJS5'           : '/swfobject.js'                   , # the jscript of the JW5 player
                     }
 
+VIDEO_FILE_SUFFIXES = [ '.avi',
+                        '.flv',
+                        '.mp4',
+                        '.ts',
+                      ]
+
 # it seems everybody has the same API key, so we'll use a very common USer AGent string to not draw attention to ourselves
 USAG    = 'BBCiPlayer/4.4.0.235 (Nexus5; Android 4.4.4)'
 API_KEY = 'q5wcnsqvnacnhjap7gzts9y6'
@@ -169,6 +175,7 @@ def check_load_config_file():
     # verify that CONTROL_DIR exists and is writable
     try:
         qdir_stat = os.stat(CONTROL_DIR)
+        #break
     except OSError:
         print 'Error, directory "%s" doesn\'t appear to exist.\n' % (CONTROL_DIR, )
         print 'Please do the following - needs root:\n'
@@ -636,7 +643,7 @@ def page_downloaded():
     print '    </tr>'
     for file_item in sorted(file_list):
         file_name, file_extension = os.path.splitext(file_item)
-        if file_extension == '.flv' or file_extension == '.avi' or file_extension == '.mp4':
+        if file_extension in VIDEO_FILE_SUFFIXES:
             file_stat = os.stat(my_settings.get(SETTINGS_SECTION, 'iplayer_directory') + '/' + file_item)
             print '  <tr>'
             print '    <td align="center">',
