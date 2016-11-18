@@ -2,6 +2,12 @@
 a python wrapper to provide a web interface to get_iplayer
 
 
+## Installation - part 0 - pre-requities
+
+* install python
+* install an http server that supports cgi-bin
+
+
 **Installation - part 1 - the web interface**
 
 * start a root shell
@@ -61,7 +67,7 @@ script should be put in your /usr/local/bin and made executable.
 * sometimes programs don't show up in search but do on
   http://www.bbc.co.uk/iplayer and you have to copy the program ID
 * audio/radio search is poor at finding programs; reverse engineering
-  the http API is not trivial
+  the http API is not trivial, and is a work in progress
 
 
 
@@ -72,6 +78,7 @@ script should be put in your /usr/local/bin and made executable.
 * a cron job runs the queue
 * the get_iplayer tool actually does the download, see
   https://github.com/get-iplayer/get_iplayer
+* the program simply tabulates the files in the downloads directory
 
 
 

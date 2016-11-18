@@ -54,19 +54,20 @@ CGI_PARAMS = cgi.FieldStorage()
 DBG_LEVEL = 0
 
 
-# the HTML document root (please make web writable dir python_errors)
+# the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
 # this is hopefully the only thing you ever need to change
 #DOCROOT_DEFAULT   = '/var/www/html'
 DOCROOT_DEFAULT   = '/var/www/public/htdocs'
 
-
+# state files, queues, logs and so on are stored in this directory
 CONTROL_DIR       = '/var/lib/web_get_iplayer'
 
 # the settings file is stored in the control directory
 SETTINGS_FILE     = 'web_get_iplayer.settings'
 SETTINGS_SECTION  = 'user'
 
-SETTINGS_VALUES   = [   'http_proxy',
+# a list of the different parameters the program uses
+SETTINGS_TAGS     = [   'http_proxy',
                         'base_url',
                         'download_args',
                         'flash_height',
@@ -85,6 +86,7 @@ SETTINGS_VALUES   = [   'http_proxy',
                         'uriFlvJS5',
                     ]
 
+# default values of the settings when being created
 SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                , # http proxy, blank if not set
                       'base_url'            : '/iplayer'                        , # relative URL direct to the iplayer files
                       'download_args'       : '--nopurge --nocopyright --flvstreamer ' + PATH_OF_SCRIPT + '/rtmpdump --rtmptvopts "--swfVfy http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf" --raw --thumb --thumbsize 150',
@@ -94,8 +96,8 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'iplayer_directory'   : '/home/iplayer'                   , # file system location of downloaded files
                       'jw_player6_key'      : ''                                , # JW Player 6 Key, leave blank if you don't have one
                       'max_recent_items'    : '5'                               , # maximum recent items
-                      'quality_radio'       : 'flashaachigh,flashaacstd'        , # flashaachigh, flashaacstd etc
-                      'quality_video'       : 'flashhd,flashvhigh,flashhigh'    , # decreasing priority
+                      'quality_radio'       : 'best,flashaachigh,flashaacstd'   , # flashaachigh, flashaacstd etc
+                      'quality_video'       : 'best,flashhd,flashvhigh,flashhigh' , # decreasing priority
                       'transcode_cmd'       : '/usr/local/bin/flv-to-divx.sh'   , # this command is passed two args input & output
                       'uriFlv6'             : '/jwplayer-6-11'                  , # URI where the JW "longtail" JW6 player was unpacked
                       'uriFlvJS6'           : '/jwplayer.js'                    , # the jscript of the JW6 player
@@ -104,6 +106,7 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'uriFlvJS5'           : '/swfobject.js'                   , # the jscript of the JW5 player
                     }
 
+# which video files to show from the download folder
 VIDEO_FILE_SUFFIXES = [ '.avi',
                         '.flv',
                         '.mp4',
@@ -114,6 +117,7 @@ VIDEO_FILE_SUFFIXES = [ '.avi',
 USAG    = 'BBCiPlayer/4.4.0.235 (Nexus5; Android 4.4.4)'
 API_KEY = 'q5wcnsqvnacnhjap7gzts9y6'
 
+# these URLs have been discovered using tcpdump whilst watching the android iplayer app
 URL_LIST = {
     'config'                : 'http://ibl.api.bbci.co.uk/appconfig/iplayer/android/4.4.0/config.json',
     'highlights'            : 'http://ibl.api.bbci.co.uk/ibl/v1/home/highlights?lang=en&rights=mobile&availability=available&api_key=',
@@ -315,6 +319,7 @@ def check_load_config_file():
     # check that the get_iplayer program is executable
     if os.path.isfile(get_iplayer_binary) and not os.access(get_iplayer_binary, os.X_OK):
         print "Error, get_iplayer program isn't executable.\nMake it executable with the following command:\n# sudo chmod ugo+x %s" % (get_iplayer_binary, )
+        config_bad = 1
 
 
 
@@ -322,6 +327,7 @@ def check_load_config_file():
     swffile = expanduser("~") + '/' + '.swfinfo'
     if os.path.isfile(get_iplayer_binary) and not os.path.isfile(swffile):
         print 'Error, file %s doesn\'t appear to exist.\nPlease do the following - needs root:\n# sudo touch %s && sudo chgrp %d: %s && sudo chmod g+w %s\n' % (swffile, swffile, my_egroup_id, swffile, swffile, )
+        config_bad = 1
 
 
 
@@ -972,7 +978,7 @@ def page_settings():
     print '<table border="1" >'
 
 
-    for setting in SETTINGS_VALUES:
+    for setting in SETTINGS_TAGS:
         setting_value = ''
 
         # get the value if possible from the URL/form
