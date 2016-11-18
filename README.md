@@ -2,11 +2,12 @@
 a python wrapper to provide a web interface to get_iplayer
 
 
-## Installation - part 0 - pre-requities
+## Installation - part 0 - pre-requisites
 
 * install python
 * install an http server that supports cgi-bin
-
+* download and build rtmpdump from https://rtmpdump.mplayerhq.hu/
+  and put the binary into the cgi-bin directory
 
 ## Installation - part 1 - the web interface
 
@@ -25,8 +26,12 @@ You might have to enable traditional cgi-bin behaviour in your apache/httpd serv
 The program analyses its environment and will tell you what to do,
 e.g. what directories to create and what permissions to give them.
 
-Note that if it doesn't run at all, run it at the command line to check
-python has all the libraries it needs.
+Note that if it doesn't run at all, run it at the command line as the httpd
+user id to check python has all the libraries it needs, like this:
+* $ sudo -i
+* # su - wwwrun -s /bin/bash
+* $ cd /var/www/cgi-bin
+* $ ./web_get_iplayer.py
 
 
 ## Installation - part 2 - the cron queue runner
@@ -38,14 +43,14 @@ Set up cron so as to call the wrapper script.
 * get the wrapper script with this command:
   wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_get_iplayer.cron.sh
 * and make it executable
-  chmod ugo+x web_get_iplayer.cron.sh 
+  chmod ugo+x web_get_iplayer.cron.sh
 * get the cron table file with
   wget -O /etc/cron.d/web_get_iplayer https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/_etc_cron.d_web_get_iplayer
 * tweak the /etc/cron.d/web_get_iplayer if your cgi-bin directory is different
 
 These together run the download queue. You could change the cron tab to run
 at night if your bandwidth is cheaper then, or change the frequency at which it
-runs if you want to allow your server to idle more. 
+runs if you want to allow your server to idle more.
 
 In case of problems, check files in /var/lib/web_get_iplayer/ which is where
 all the queues and logs are kept.
