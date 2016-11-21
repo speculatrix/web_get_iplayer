@@ -67,12 +67,16 @@ all the queues and logs are kept.
 You should be able to play back the downloaded files with mplayer, vlc, ffplay etc.
 
 If you want to use the embedded player, you need the JWplayer. In order to
-get this, you need to register with the www.jwplayer.com website. Then you
-can download the jwplayer-<version>.zip file, make a note of the licence key.
-; available from https://dashboard.jwplayer.com/#/welcome
+get this, you need to register with the www.jwplayer.com website.
+
+Usually, if you've registered correctly, the download page will be 
+https://dashboard.jwplayer.com/#/welcome
+
+Download the jwplayer-*version*.zip file, make a note of the licence key.
 Unpack the zip file into your htdocs directory, so it appears as 
-http://example/jw-player-<version>/ and ensure the appropriate relative URI
-is put into the configuration along with the licence key.
+http://example/jw-players-*version*/ and ensure the appropriate relative URI
+is put into the configuration along with the licence key string.
+
 
 You can transcode the FLV files into other formats to play on other devices;
 mp4 is a popular choice. The UI offers this possibility, whereby it calls
