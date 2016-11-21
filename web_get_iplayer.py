@@ -74,16 +74,23 @@ SETTINGS_TAGS     = [   'http_proxy',
                         'flash_width',
                         'get_iplayer',
                         'iplayer_directory',
-                        'jw_player6_key',
                         'max_recent_items',
                         'quality_radio',
                         'quality_video',
                         'transcode_cmd',
-                        'uriFlv6',
-                        'uriFlvJS6',
-                        'uriFlv5',
-                        'uriFlvSWF5',
-                        'uriFlvJS5',
+                        'Flv5Enable',
+                        'Flv5Uri',
+                        'Flv5UriSWF',
+                        'Flv5UriJS',
+                        'Flv5Key',
+                        'Flv6Enable',
+                        'Flv6Uri',
+                        'Flv6UriJS',
+                        'Flv6Key',
+                        'Flv7Enable',
+                        'Flv7Uri',
+                        'Flv7UriJS',
+                        'Flv7Key',
                     ]
 
 # default values of the settings when being created
@@ -94,16 +101,23 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'flash_width'         : '1280'                            , # ...
                       'get_iplayer'         : PATH_OF_SCRIPT + '/get_iplayer'   , # full get_iplayer path
                       'iplayer_directory'   : '/home/iplayer'                   , # file system location of downloaded files
-                      'jw_player6_key'      : ''                                , # JW Player 6 Key, leave blank if you don't have one
                       'max_recent_items'    : '5'                               , # maximum recent items
                       'quality_radio'       : 'best,flashaachigh,flashaacstd'   , # flashaachigh, flashaacstd etc
                       'quality_video'       : 'best,flashhd,flashvhigh,flashhigh' , # decreasing priority
                       'transcode_cmd'       : '/usr/local/bin/flv-to-divx.sh'   , # this command is passed two args input & output
-                      'uriFlv6'             : '/jwplayer-6-11'                  , # URI where the JW "longtail" JW6 player was unpacked
-                      'uriFlvJS6'           : '/jwplayer.js'                    , # the jscript of the JW6 player
-                      'uriFlv5'             : '/jwmediaplayer-5.8'              , # URI where the JW "longtail" JW5 player was unpacked
-                      'uriFlvSWF5'          : '/player.swf'                     , # the swf of the JW5 player
-                      'uriFlvJS5'           : '/swfobject.js'                   , # the jscript of the JW5 player
+                      'Flv5Enable'          : '1'                               , # whether to show the JWplayer 7 column 
+                      'Flv5Uri'             : '/jwmediaplayer-5.8'              , # URI where the JW "longtail" JW5 player was unpacked
+                      'Flv5UriSWF'          : '/player.swf'                     , # the swf of the JW5 player
+                      'Flv5UriJS'           : '/swfobject.js'                   , # the jscript of the JW5 player
+                      'Flv6Enable'          : '1'                               , # whether to show the JWplayer 7 column 
+                      'Flv5Key'             : ''                                , # JW Player 5 Key, leave blank if you don't have one
+                      'Flv6Uri'             : '/jwplayer-6-11'                  , # URI where the JW "longtail" JW6 player was unpacked
+                      'Flv6UriJS'           : '/jwplayer.js'                    , # the jscript of the JW6 player
+                      'Flv6Key'             : ''                                , # JW Player 6 Key, leave blank if you don't have one
+                      'Flv7Enable'          : '1'                               , # whether to show the JWplayer 7 column 
+                      'Flv7Uri'             : '/jwplayer-7.7.4'                 , # URI where the JW "longtail" JW7 player was unpacked
+                      'Flv7UriJS'           : '/jwplayer.js'                    , # the jscript of the JW6 player
+                      'Flv7Key'             : ''                                , # JW Player 7 Key, leave blank if you don't have one
                     }
 
 # which video files to show from the download folder
@@ -638,8 +652,12 @@ def page_downloaded():
     print '  <table border="0">'
     print '    <tr>'
     print '      <th>&nbsp;</th>'
-    print '      <th>JWPlayer5</th>'
-    print '      <th>JWPlayer6</th>'
+    if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
+        print '      <th>JWPlayer5</th>'
+    if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
+        print '      <th>JWPlayer6</th>'
+    if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
+        print '      <th>JWPlayer7</th>'
     print '      <th>Download</th>'
     print '      <th>Transcode</th>'
     print '      <th>Delete</th>'
@@ -658,8 +676,12 @@ def page_downloaded():
             else:
                 print '&nbsp;',
             print '</td>'
-            print '      <td align="center"><a href="?page=jwplay5&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
-            print '      <td align="center"><a href="?page=jwplay6&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
+            if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
+                print '      <td align="center"><a href="?page=jwplay5&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
+            if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
+              print '      <td align="center"><a href="?page=jwplay6&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
+            if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
+              print '      <td align="center"><a href="?page=jwplay7&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
             print '      <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
             print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
             print '      <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
@@ -715,7 +737,7 @@ def page_jwplay5(p_file):
                 allowscripaccess="always"
                 id="player1"
                 name="player1"
-                src="'''    + my_settings.get(SETTINGS_SECTION, 'uriFlv5')      + my_settings.get(SETTINGS_SECTION, 'uriFlvSWF5') + '''"
+                src="'''    + my_settings.get(SETTINGS_SECTION, 'Flv5Uri')      + my_settings.get(SETTINGS_SECTION, 'Flv5UriSWF') + '''"
                 width="'''  + my_settings.get(SETTINGS_SECTION, 'flash_width')  + '''"
                 height="''' + my_settings.get(SETTINGS_SECTION, 'flash_height') + '''"
         />'''
@@ -725,10 +747,28 @@ def page_jwplay5(p_file):
 def page_jwplay6(p_file):
     """this is the longtail/jwplayer version 6 movie player"""
 
-    print '    <script type="text/javascript" src="%s%s"></script>' % (my_settings.get(SETTINGS_SECTION, 'uriFlv6'), my_settings.get(SETTINGS_SECTION, 'uriFlvJS6'), )
+    print '    <script type="text/javascript" src="%s%s"></script>' % (my_settings.get(SETTINGS_SECTION, 'Flv6Uri'), my_settings.get(SETTINGS_SECTION, 'Flv6UriJS'), )
 
-    if my_settings.get(SETTINGS_SECTION, 'jw_player6_key') != '':
-        print '    <script type="text/javascript">jwplayer.key="%s";</script>' % (my_settings.get(SETTINGS_SECTION, 'jw_player6_key'), )
+    if my_settings.get(SETTINGS_SECTION, 'Flv6Key') != '':
+        print '    <script type="text/javascript">jwplayer.key="%s";</script>' % (my_settings.get(SETTINGS_SECTION, 'Flv6Key'), )
+
+    print '''    <div id="myElement">Loading the player...</div>
+    <script type="text/javascript">
+        jwplayer("myElement").setup({
+            file: "''' + my_settings.get(SETTINGS_SECTION, 'base_url') + '/' + p_file + '''",
+            fallback: true
+        });
+    </script>
+'''
+
+#####################################################################################################################
+def page_jwplay7(p_file):
+    """this is the longtail/jwplayer version 7 movie player"""
+
+    print '    <script type="text/javascript" src="%s%s"></script>' % (my_settings.get(SETTINGS_SECTION, 'Flv7Uri'), my_settings.get(SETTINGS_SECTION, 'Flv7UriJS'), )
+
+    if my_settings.get(SETTINGS_SECTION, 'Flv7Key') != '':
+        print '    <script type="text/javascript">jwplayer.key="%s";</script>' % (my_settings.get(SETTINGS_SECTION, 'Flv7Key'), )
 
     print '''    <div id="myElement">Loading the player...</div>
     <script type="text/javascript">
@@ -1413,6 +1453,9 @@ def web_interface():
 
             if p_page == 'jwplay6':
                 page_jwplay6(p_file)
+
+            if p_page == 'jwplay7':
+                page_jwplay7(p_file)
 
             if p_page == 'popular':
                 page_popular()
