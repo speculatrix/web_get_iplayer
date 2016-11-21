@@ -74,21 +74,22 @@ Unpack the zip file into your htdocs directory, so it appears as
 http://example/jw-player-<version>/ and ensure the appropriate relative URI
 is put into the configuration along with the licence key.
 
+You can transcode the FLV files into other formats to play on other devices;
+mp4 is a popular choice. The UI offers this possibility, whereby it calls
+a transcode command. A useful script for this is flv-to-divx.sh, download it
+and make it executable. A good place to put it is /usr/local/bin , but you
+can configure its location.
 
-If you want to play the FLV files on other devices, the flv-to-divx.sh
-script should be copied over, made executable. A good place to put it is
-/usr/local/bin but you can put it anywhere.
 
 
-
-## Known problems
+## Known problems and shortcomings
 
 * sometimes programs don't show up in search but do on
   http://www.bbc.co.uk/iplayer and you have to copy the
   program ID manually into the download function
 * audio/radio search is poor at finding programs; reverse engineering
   the http API is not trivial, and is a work in progress
-
+* all the downloaded audio.video files live in the same directory
 
 
 **How it works**
