@@ -8,6 +8,12 @@ a python wrapper to provide a web interface to get_iplayer
 * install an http server that supports cgi-bin
 * download and build rtmpdump from https://rtmpdump.mplayerhq.hu/
   and put the binary into the cgi-bin directory
+* download the get_iplayer program from
+  https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
+  and put it into the cgi-bin directory, ensure it's made executable
+* (optional) get the JW Player if you wish to be able to play FLV
+  videos embedded in the web page - see instructions in Playback.
+
 
 ## Installation - part 1 - the web interface
 
@@ -60,10 +66,18 @@ all the queues and logs are kept.
 
 You should be able to play back the downloaded files with mplayer, vlc, ffplay etc.
 
-If you want to use the embedded player, you need the JWplayer. Instructions on downloading and setting this up are coming soon.
+If you want to use the embedded player, you need the JWplayer. In order to
+get this, you need to register with the www.jwplayer.com website. Then you
+can download the jwplayer-<version>.zip file, make a note of the licence key.
+; available from https://dashboard.jwplayer.com/#/welcome
+Unpack the zip file into your htdocs directory, so it appears as 
+http://example/jw-player-<version>/ and ensure the appropriate relative URI
+is put into the configuration along with the licence key.
+
 
 If you want to play the FLV files on other devices, the flv-to-divx.sh
-script should be put in your /usr/local/bin and made executable.
+script should be copied over, made executable. A good place to put it is
+/usr/local/bin but you can put it anywhere.
 
 
 
