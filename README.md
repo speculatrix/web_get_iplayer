@@ -74,7 +74,7 @@ https://dashboard.jwplayer.com/#/welcome
 
 Download the jwplayer-*version*.zip file, make a note of the licence key.
 Unpack the zip file into your htdocs directory, so it appears as 
-http://example/jw-players-*version*/ and ensure the appropriate relative URI
+http://example/jw-player-*version*/ and ensure the appropriate relative URI
 is put into the configuration along with the licence key string.
 
 
