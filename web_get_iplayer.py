@@ -103,8 +103,8 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'iplayer_directory'   : '/home/iplayer'                   , # file system location of downloaded files
                       'max_recent_items'    : '5'                               , # maximum recent items
                       'quality_radio'       : 'best,flashaachigh,flashaacstd'   , # flashaachigh, flashaacstd etc
-                      'quality_video'       : 'best,flashhd,flashvhigh,flashhigh' , # decreasing priority
-                      'transcode_cmd'       : '/usr/local/bin/flv-to-divx.sh'   , # this command is passed two args input & output
+                      'quality_video'       : 'best,flashhd,flashvhigh'         , # decreasing priority
+                      'transcode_cmd'       : '/usr/local/bin/ts-to-mp4.sh'     , # this command is passed two args input & output
                       'Flv5Enable'          : '1'                               , # whether to show the JWplayer 7 column 
                       'Flv5Uri'             : '/jwmediaplayer-5.8'              , # URI where the JW "longtail" JW5 player was unpacked
                       'Flv5UriSWF'          : '/player.swf'                     , # the swf of the JW5 player
@@ -319,7 +319,7 @@ def check_load_config_file():
 
 
     # verify that get_iplayer has a directory to write to
-    get_iplayer_dir = expanduser("~") + '/' + '.get_iplayer'
+    get_iplayer_dir = os.path.join(expanduser("~"), '.get_iplayer', )
     if not os.path.isdir(get_iplayer_dir):
         print 'Error, directory %s doesn\'t appear to exist.\nPlease do the following - needs root:\n# sudo mkdir %s && sudo chown %d:%d %s && sudo chmod g+ws %s\n' % (get_iplayer_dir, get_iplayer_dir, my_euser_id, my_egroup_id, get_iplayer_dir, get_iplayer_dir, )
         config_bad = 1
@@ -492,7 +492,7 @@ def delete_files_by_inode(inode_list, del_img_flag):
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
     for file_name in sorted(file_list):
-        full_file = my_settings.get(SETTINGS_SECTION, 'iplayer_directory') + '/' + file_name
+        full_file = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
         if os.path.isfile(full_file):    # need to check file exists in case its a jpg we already deleted
             file_stat = os.stat(full_file)
             #print 'considering file %s which has inode %d\n<br >' % (full_file, file_stat[stat.ST_INO], )
@@ -668,10 +668,11 @@ def page_downloaded():
     for file_item in sorted(file_list):
         file_name, file_extension = os.path.splitext(file_item)
         if file_extension in VIDEO_FILE_SUFFIXES:
-            file_stat = os.stat(my_settings.get(SETTINGS_SECTION, 'iplayer_directory') + '/' + file_item)
+            file_stat = os.stat(os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_item, ))
             print '  <tr>'
             print '    <td align="center">',
-            if os.path.isfile(my_settings.get(SETTINGS_SECTION, 'iplayer_directory')  + '/' + file_name + '.jpg'):
+            file_name_jpg = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name, '.jpg')
+            if os.path.isfile(file_name_jpg):
                 print '<img src="%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_name, ),
             else:
                 print '&nbsp;',
@@ -1067,17 +1068,22 @@ def page_transcode(p_submit, p_transcode_inodes):
         print '<form method="get" action="">'
         print '<input type="text" name="transcode_options" value="%s" size="50"><br />' % my_settings.get(SETTINGS_SECTION, 'transcode_cmd')
         print '<input type="submit" name="submit" value="Transcode">'
+        for inode_num in p_transcode_inodes:
+            print '<input type="hidden" name="transcode_inodes" value="%s">' % (inode_num, )
+        print '<input type="hidden" name="page" value="transcode">'
         print '</form>'
     else:
         file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
         for file_name in sorted(file_list):
-            full_file_name = my_settings.get(SETTINGS_SECTION, 'iplayer_directory') + '/' + file_name
+            full_file_name = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
             file_stat = os.stat(full_file_name)
             #print 'considering file %s which has inode %d\n<br >' % (full_file_name, file_stat[stat.ST_INO], )
             if str(file_stat[stat.ST_INO]) in p_transcode_inodes:
-                cmd = my_settings.get(SETTINGS_SECTION, 'transcode_cmd') + ' ' + full_file_name + ' 2>&1'
-                print 'file %s is being transcoded with command %s\n<br ><pre>\n' % (full_file_name, cmd, )
+		full_file_mp4 = '%s.mp4' % ( os.path.splitext(full_file_name)[0], )
+                cmd = '%s %s %s 2>&1' % (my_settings.get(SETTINGS_SECTION, 'transcode_cmd'), full_file_name, full_file_mp4, )
+                #print 'file %s is being transcoded with command %s\n<br ><pre>\n' % (full_file_name, cmd, )
+                print 'file transcoding<pre>\n%s\n' % (cmd, )
                 sys.stdout.flush()
                 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0) # capture stdout
                 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0) # and stderr
@@ -1368,6 +1374,9 @@ def web_interface():
         print '<br />\n<br />'
 
 
+        ########
+        # gather all the browser supplied CGI params and validate/sanitise
+
         if 'enable_delete' in CGI_PARAMS :
             print 'you chose enabled delete\n<br />\n'
             inode_list = CGI_PARAMS.getlist("delete_inode")
@@ -1377,7 +1386,6 @@ def web_interface():
             if len(inode_list) :
                 delete_files_by_inode(inode_list, del_img_flag)
 
-        # gather all the browser supplied CGI params and validate/sanitise
         p_pid = ''
         if 'pid' in CGI_PARAMS:
             p_pid = CGI_PARAMS.getvalue('pid')
@@ -1414,6 +1422,8 @@ def web_interface():
             p_submit = CGI_PARAMS.getvalue('submit')
 
 
+        ########
+        # call the specific page
         if illegal_param_count > 0:
             page_illegal_param(illegal_param_count)
 
