@@ -671,26 +671,26 @@ def page_downloaded():
             file_stat = os.stat(os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_item, ))
             print '  <tr>'
             print '    <td align="center">',
-            file_name_jpg = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name, '.jpg')
+            file_name_jpg = "%s.jpg" % (os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name, ))
             if os.path.isfile(file_name_jpg):
                 print '<img src="%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_name, ),
             else:
                 print '&nbsp;',
             print '</td>'
             if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
-                print '      <td align="center"><a href="?page=jwplay5&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
+                print '    <td align="center"><a href="?page=jwplay5&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
             if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
-              print '      <td align="center"><a href="?page=jwplay6&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
+                print '    <td align="center"><a href="?page=jwplay6&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
             if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
-              print '      <td align="center"><a href="?page=jwplay7&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
-            print '      <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
-            print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
-            print '      <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
-            print '      <td>%d</td>' % (file_stat.st_size / 1024)
-            print '      <td>%s</td>' % time.ctime(file_stat.st_mtime)
-            print '      <td>%s</td>' % file_item
-            print '    </tr>'
-            print '    <tr><td colspan="9"><hr /></td>\n</tr>'
+                print '    <td align="center"><a href="?page=jwplay7&file=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, )
+            print '    <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
+            print '    <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
+            print '    <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
+            print '    <td>%d</td>' % (file_stat.st_size / 1024)
+            print '    <td>%s</td>' % time.ctime(file_stat.st_mtime)
+            print '    <td>%s</td>' % file_item
+            print '  </tr>'
+            print '  <tr><td colspan="9"><hr /></td>\n</tr>'
 
     print '  </table>\n<input type="submit" name="submit" value="GO" />\n</form>\n'
 
