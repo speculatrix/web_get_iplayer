@@ -218,17 +218,16 @@ def get_github_hash_get_iplayer():
 #####################################################################################################################
 def get_githash_self():
 
-    # get the size of the get_iplayer file
+    # stat this file 
     fullfile_name = __file__
     fullfile_stat = os.stat(fullfile_name)
 
-    # read the entire get_iplayer file into memory
+    # read this entire file into memory
     fullfile_content = ''
     with open(fullfile_name, 'r') as fullfile_fh:
         fullfile_content = fullfile_fh.read()
-        #print "successfully read file content length %d\n<br />" % (len(fullfile_content), )
 
-
+    # do what "git hash-object" does
     m = hashlib.sha1()
     m.update('blob %d\0' % fullfile_stat.st_size)
     m.update(fullfile_content)
@@ -240,7 +239,7 @@ def get_githash_self():
 #####################################################################################################################
 def get_githash_get_iplayer():
 
-    # get the size of the get_iplayer file
+    # stat the get_iplayer file
     fullfile_name = my_settings.get(SETTINGS_SECTION, 'get_iplayer')
     fullfile_stat = os.stat(fullfile_name)
 
@@ -248,9 +247,8 @@ def get_githash_get_iplayer():
     fullfile_content = ''
     with open(fullfile_name, 'r') as fullfile_fh:
         fullfile_content = fullfile_fh.read()
-        #print "successfully read file content length %d\n<br />" % (len(fullfile_content), )
 
-
+    # do what "git hash-object" does
     m = hashlib.sha1()
     m.update('blob %d\0' % fullfile_stat.st_size)
     m.update(fullfile_content)
