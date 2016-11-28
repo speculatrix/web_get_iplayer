@@ -25,6 +25,7 @@ import base64
 import cgi
 import cgitb
 import ConfigParser
+import hashlib
 import json
 import os
 import re               # now have two problems
@@ -197,7 +198,8 @@ def get_github_hash_self():
 
 
 #####################################################################################################################
-def get_github_hash_getiplayer():
+def get_github_hash_get_iplayer():
+
     githubhash = 'UNKNOWN'
 
     try:
@@ -211,6 +213,50 @@ def get_github_hash_getiplayer():
 
 
     return githubhash
+
+
+#####################################################################################################################
+def get_githash_self():
+
+    # get the size of the get_iplayer file
+    fullfile_name = __file__
+    fullfile_stat = os.stat(fullfile_name)
+
+    # read the entire get_iplayer file into memory
+    fullfile_content = ''
+    with open(fullfile_name, 'r') as fullfile_fh:
+        fullfile_content = fullfile_fh.read()
+        #print "successfully read file content length %d\n<br />" % (len(fullfile_content), )
+
+
+    m = hashlib.sha1()
+    m.update('blob %d\0' % fullfile_stat.st_size)
+    m.update(fullfile_content)
+
+
+    return m.hexdigest()
+
+
+#####################################################################################################################
+def get_githash_get_iplayer():
+
+    # get the size of the get_iplayer file
+    fullfile_name = my_settings.get(SETTINGS_SECTION, 'get_iplayer')
+    fullfile_stat = os.stat(fullfile_name)
+
+    # read the entire get_iplayer file into memory
+    fullfile_content = ''
+    with open(fullfile_name, 'r') as fullfile_fh:
+        fullfile_content = fullfile_fh.read()
+        #print "successfully read file content length %d\n<br />" % (len(fullfile_content), )
+
+
+    m = hashlib.sha1()
+    m.update('blob %d\0' % fullfile_stat.st_size)
+    m.update(fullfile_content)
+
+
+    return m.hexdigest()
 
 
 #####################################################################################################################
@@ -1037,8 +1083,34 @@ def page_upgrade_check():
 
     ################################################
     # see if this script is up to date
-    print "github hash of this file %s<br />\n" % (get_github_hash_self(), )
-    print "github hash of get_iplayer %s<br />\n" % (get_github_hash_getiplayer(), )
+    githubhash_self = get_github_hash_self()
+    githash_self    = get_githash_self()
+
+    print "<p>"
+    print "github of this file %s<br />\n" % (githubhash_self, )
+    print "git hash of this file %s<br />\n" % (githash_self, )
+
+    githubhash_get_iplayer = get_github_hash_get_iplayer()
+    githash_get_iplayer     = get_githash_get_iplayer()
+
+    print "github hash of get_iplayer %s<br />\n" % (githubhash_get_iplayer, )
+    print "git hash of get_iplayer %s<br />\n" % (githash_get_iplayer, )
+
+
+    print "</p>\n<p>"
+
+    if (githubhash_self == githash_self):
+        print "Great, this program is the same as the version on github.\n<br />\n"
+    else:
+        print "This program appears to be out of date, please update it.\n<br />\n"
+
+
+    if (githubhash_get_iplayer == githash_get_iplayer):
+        print "Great, the get_iplayer program is the same as the version on github.\n<br />\n"
+    else:
+        print "The get_iplayer program appears to be out of date, please update it.\n<br />\n"
+
+    print "</p>"
 
 
 #####################################################################################################################
