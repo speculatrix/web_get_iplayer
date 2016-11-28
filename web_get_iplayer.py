@@ -105,16 +105,16 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'quality_radio'       : 'best,flashaachigh,flashaacstd'   , # flashaachigh, flashaacstd etc
                       'quality_video'       : 'best,flashhd,flashvhigh'         , # decreasing priority
                       'transcode_cmd'       : '/usr/local/bin/ts-to-mp4.sh'     , # this command is passed two args input & output
-                      'Flv5Enable'          : '1'                               , # whether to show the JWplayer 7 column 
+                      'Flv5Enable'          : '1'                               , # whether to show the JWplayer 7 column
                       'Flv5Uri'             : '/jwmediaplayer-5.8'              , # URI where the JW "longtail" JW5 player was unpacked
                       'Flv5UriSWF'          : '/player.swf'                     , # the swf of the JW5 player
                       'Flv5UriJS'           : '/swfobject.js'                   , # the jscript of the JW5 player
-                      'Flv6Enable'          : '1'                               , # whether to show the JWplayer 7 column 
+                      'Flv6Enable'          : '1'                               , # whether to show the JWplayer 7 column
                       'Flv5Key'             : ''                                , # JW Player 5 Key, leave blank if you don't have one
                       'Flv6Uri'             : '/jwplayer-6-11'                  , # URI where the JW "longtail" JW6 player was unpacked
                       'Flv6UriJS'           : '/jwplayer.js'                    , # the jscript of the JW6 player
                       'Flv6Key'             : ''                                , # JW Player 6 Key, leave blank if you don't have one
-                      'Flv7Enable'          : '1'                               , # whether to show the JWplayer 7 column 
+                      'Flv7Enable'          : '1'                               , # whether to show the JWplayer 7 column
                       'Flv7Uri'             : '/jwplayer-7.7.4'                 , # URI where the JW "longtail" JW7 player was unpacked
                       'Flv7UriJS'           : '/jwplayer.js'                    , # the jscript of the JW6 player
                       'Flv7Key'             : ''                                , # JW Player 7 Key, leave blank if you don't have one
@@ -174,6 +174,44 @@ COMPLETED_QUEUE = 'completed.txt' # active items added here when done
 RECENT_ITEMS    = 'recent.txt'  # recently downloaded
 
 
+URL_GITHUB_HASH_SELF       = 'https://api.github.com/repos/speculatrix/web_get_iplayer/contents/web_get_iplayer.py'
+URL_GITHUB_HASH_GETIPLAYER = 'https://api.github.com/repos/get-iplayer/get_iplayer/contents/get_iplayer'
+
+
+#####################################################################################################################
+def get_github_hash_self():
+
+    githubhash = 'UNKNOWN'
+
+    try:
+        opener = urllib2.build_opener()
+        json_data = json.load(opener.open(URL_GITHUB_HASH_SELF))
+        githubhash = json_data['sha']
+
+    except urllib2.HTTPError:
+        print 'get_github_hash_self: Exception urllib2.HTTPError'
+        githubhash = 'urllib2.HTTPError:'
+
+
+    return githubhash
+
+
+#####################################################################################################################
+def get_github_hash_getiplayer():
+    githubhash = 'UNKNOWN'
+
+    try:
+        opener = urllib2.build_opener()
+        json_data = json.load(opener.open(URL_GITHUB_HASH_GETIPLAYER))
+        githubhash = json_data['sha']
+
+    except urllib2.HTTPError:
+        print 'get_github_hash_self: Exception urllib2.HTTPError'
+        githubhash = 'urllib2.HTTPError:'
+
+
+    return githubhash
+
 
 #####################################################################################################################
 def check_load_config_file():
@@ -200,6 +238,7 @@ def check_load_config_file():
         print '\tsudo mkdir "%s" && sudo chgrp %s "%s" && sudo chmod g+ws "%s"\n' % (CONTROL_DIR, str(my_egroup_id), CONTROL_DIR, CONTROL_DIR)
         config_bad = -1
         return config_bad
+
 
     # owned by me and writable by me, or same group as me and writable through that group?
     if (   (qdir_stat.st_uid == my_euser_id  and (qdir_stat.st_mode & stat.S_IWUSR) != 0)
@@ -992,6 +1031,17 @@ def page_search(p_sought):
         print '  </table>'
 
 #####################################################################################################################
+def page_upgrade_check():
+    """the upgrade check page"""
+
+
+    ################################################
+    # see if this script is up to date
+    print "github hash of this file %s<br />\n" % (get_github_hash_self(), )
+    print "github hash of get_iplayer %s<br />\n" % (get_github_hash_getiplayer(), )
+
+
+#####################################################################################################################
 def page_settings():
     """the configuration page"""
 
@@ -1368,6 +1418,7 @@ def web_interface():
         print '<a href="?page=queues">Queues & Logs</a>&nbsp;&nbsp;&nbsp;'
         print '<a href="?page=search">Search</a>&nbsp;&nbsp;&nbsp;'
         print '<a href="?page=settings">Settings</a>&nbsp;&nbsp;&nbsp;'
+        print '<a href="?page=upgrade_check">Upgrade Check</a>&nbsp;&nbsp;&nbsp;'
         if enable_dev_mode:
             print '<a href="?page=development">Development</a>&nbsp;&nbsp;&nbsp;'
             print '<a href="/python_errors/" target=_new>Python Errors</a>&nbsp;&nbsp;&nbsp;'
@@ -1481,6 +1532,9 @@ def web_interface():
 
             if p_page == 'settings':
                 page_settings()
+
+            if p_page == 'upgrade_check':
+                page_upgrade_check()
 
 
         #page_download()
