@@ -1085,7 +1085,7 @@ def page_upgrade_check():
     githash_self    = get_githash_self()
 
     print "<p>"
-    print "github of this file %s<br />\n" % (githubhash_self, )
+    print "github hash of this file %s<br />\n" % (githubhash_self, )
     print "git hash of this file %s<br />\n" % (githash_self, )
 
     githubhash_get_iplayer = get_github_hash_get_iplayer()
@@ -1303,13 +1303,11 @@ def read_queue(queue, queue_file_name):
     queue_count = -1
     if os.path.isfile(queue_file_name):
         try:
+            with open(queue_file_name) as infile:
+                queue.extend(json.load(infile))
+
+            infile.close()
             queue_count = 0
-            with open(queue_file_name) as file_handle:
-                for line in file_handle:
-                    #print 'read line %s from file' % (line, )
-                    queue.extend(eval(line))
-                    queue_count += 1
-            file_handle.close()
         except OSError:
             # ignore when file can't be opened
             print 'Error, read_queue couldn\t open file %s for reading' % (queue_file_name, )
@@ -1622,19 +1620,19 @@ def web_interface():
 
 #####################################################################################################################
 def write_queue(queue, queue_file_name):
-    """write a queue file and return 0 if OK, -1 for error """
+    """write a queue file which is json format,
+       returns -1 on error"""
 
-    error_flag = 0
+    error_flag = -1
     try:
-        file_handle = open(queue_file_name, 'w')
-        file_handle.write(str(queue))
-        file_handle.close()
+        with open(queue_file_name, 'w') as outfile:
+            json.dump(queue, outfile)
+        outfile.close()
+        error_flag = 0
     except OSError:
-        error_flag = -1
         print 'Error, write_queue couldn\t open file %s for writing' % (queue_file_name, )
 
     return(error_flag)
-
 
 
 #####################################################################################################################
