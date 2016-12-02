@@ -1335,17 +1335,17 @@ def print_program_listing_rows(jrows, p_mediatype, id_tag_name):
         j_type = jrow['type']
         j_title = ''
         if 'title' in jrow:
-            j_title = unicode(jrow['title']).encode('ascii', 'skip')
+            j_title = unicode(jrow['title']).encode('ascii', 'ignore')
         j_subtitle = ''
         if 'subtitle' in jrow:
-            j_subtitle = unicode(jrow['subtitle']).encode('ascii', 'skip')
+            j_subtitle = unicode(jrow['subtitle']).encode('ascii', 'ignore')
         b64_title = base64.b64encode(j_title)
         b64_subtitle = base64.b64encode(j_subtitle)
 
         j_synsm = ''
         if 'synopses' in jrow:
             if 'small' in jrow['synopses']:
-                j_synsm = unicode(jrow['synopses']['small']).encode('ascii', 'skip')
+                j_synsm = unicode(jrow['synopses']['small']).encode('ascii', 'ignore')
 
         j_duration = ''
         if 'versions' in jrow:
@@ -1359,7 +1359,7 @@ def print_program_listing_rows(jrows, p_mediatype, id_tag_name):
             if j_type == 'episode':
                 print '%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
                 print '<a href="?page=recommend&pid=%s&mediatype=%s">recommendations</a>' % (j_pid, p_mediatype, )
-            if j_type == 'brand':
+            if j_type == 'brand' or j_type == 'series':
                 print '<a href="?page=episodes&pid=%s&mediatype=%s">more episodes</a>' % (j_pid, p_mediatype, )
             print '&nbsp;</td>'
 
