@@ -868,8 +868,8 @@ def page_illegal_param(illegal_param_count):
     """parameter being passed has invalid format, possibly indicating hack
     attack"""
 
-    print '<h1>Illegal Parameter</h1>.
-    print '%d illegal parameters found. % illegal_param_count
+    print '<h1>Illegal Parameter</h1>'
+    print '%d illegal parameters found' % (illegal_param_count, )
 
 
 #####################################################################################################################
