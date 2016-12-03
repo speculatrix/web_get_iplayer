@@ -378,7 +378,6 @@ def check_load_config_file():
         return config_bad
 
 
-
     # verify that the queue submission file is writable IF it exists
     s_q_f_name = os.path.join(CONTROL_DIR, SUBMIT_QUEUE)
     try:
@@ -400,7 +399,6 @@ def check_load_config_file():
     #print 'Debug, dropped through to end of check_load_config_file'
 
 
-
     # verify that get_iplayer has a directory to write to
     get_iplayer_dir = os.path.join(expanduser("~"), '.get_iplayer', )
     if not os.path.isdir(get_iplayer_dir):
@@ -411,13 +409,12 @@ def check_load_config_file():
     # check that the get_iplayer program exists
     get_iplayer_binary = my_settings.get(SETTINGS_SECTION, 'get_iplayer')
     if not os.path.isfile(get_iplayer_binary):
-        print "Error, get_iplayer program wasn't found.\nPlease fix the configuration for get_iplayer below, or download the program and make it executable with the following commands.\n# sudo wget -O %s https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer\n# sudo chmod ugo+x %s" % (get_iplayer_binary, get_iplayer_binary, )
+        print 'Error, get_iplayer program wasn\'t found.\nPlease fix the configuration for get_iplayer below, or download the program and make it executable with the following commands.\n# sudo wget -O %s https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer\n# sudo chmod ugo+x %s' % (get_iplayer_binary, get_iplayer_binary, )
         config_bad = 1
     # check that the get_iplayer program is executable
     if os.path.isfile(get_iplayer_binary) and not os.access(get_iplayer_binary, os.X_OK):
-        print "Error, get_iplayer program isn't executable.\nMake it executable with the following command:\n# sudo chmod ugo+x %s" % (get_iplayer_binary, )
+        print 'Error, get_iplayer program isn\'t executable.\nMake it executable with the following command:\n# sudo chmod ugo+x %s' % (get_iplayer_binary, )
         config_bad = 1
-
 
 
     # need swffile for the rtmpdump program to work
@@ -427,7 +424,6 @@ def check_load_config_file():
         config_bad = 1
 
 
-
     return config_bad
 
 
@@ -435,11 +431,21 @@ def check_load_config_file():
 def cron_run_queue():
     """ this is the function called when in cron mode """
 
-    # open pending queue
+    # get active queue, if it's not empty, then exit as only one download may be active
+    active_queue = []
+    aqi = 0         # count pending queue entries, -1 if queue couldn't be read
+    a_q_f_name = CONTROL_DIR + '/' + ACTIVE_QUEUE
+    if os.path.isfile(a_q_f_name):
+        aqi = read_queue(active_queue, a_q_f_name)
+        if aqi > 0:
+            print 'Info, active queue is not empty, so cron job terminating'
+            exit(0)
+
+
+    # get pending queue
     pend_queue = []
     pqi = 0         # count pending queue entries, -1 if queue couldn't be read
     p_q_f_name = CONTROL_DIR + '/' + PENDING_QUEUE
-    #print 'Debug, pending queue file name %s' % (p_q_f_name, )
     if os.path.isfile(p_q_f_name):
         pqi = read_queue(pend_queue, p_q_f_name)
         if pqi == -1:
@@ -448,18 +454,24 @@ def cron_run_queue():
     else:
         print 'Info, pending queue file didn\'t exist, it will be created'
 
-    # rename then read the submission queue file to ensure can't be added to whilst we're processing it
+    # rename the submission queue file to a temporary name, then sleep for
+    # a second; this is to mitigate the race condition of the web interface
+    # writing an entry just at that moment.
     sub_queue = []
     sqi = 0         # count submission queue entries, -1 if queue couldn't be read
     s_q_f_name = CONTROL_DIR + '/' + SUBMIT_QUEUE
     s_q_f_tmp_name = s_q_f_name + '.tmp'
     if os.path.isfile(s_q_f_name):
         os.rename(s_q_f_name, s_q_f_tmp_name)
+        time.sleep(1)
         sqi = read_queue(sub_queue, s_q_f_tmp_name)
         os.remove(s_q_f_tmp_name)
 
+    print 'Info, sub_queue is now %s' % (str(sub_queue), )
     if sqi > 0:
         pend_queue.extend(sub_queue)
+        if write_queue(pend_queue, p_q_f_name) == -1:
+            print 'Error, failed writing pending queue item to file %s' % (p_q_f_name, )
 
 
     # recently completed
@@ -477,25 +489,27 @@ def cron_run_queue():
 
     first_item = []
     if len(pend_queue) > 0:
-        act_queue = []
+        # pop the first item off the pending queue, and rewrite it
         first_item = pend_queue.pop(0)
+        if write_queue(pend_queue, p_q_f_name) == -1:
+            print 'Error, failed writing pending queue item to file %s' % (p_q_f_name, )
+
         first_item['TT_started'] = time.time()
         print 'pending queue now %s' % str(pend_queue)
-        print 'first item on queue %s' % str(first_item)
-        act_queue.append( first_item )
-        print 'active queue now %s' % str(act_queue)
+        active_queue.append( first_item )
+        print 'active queue now %s' % str(active_queue)
         if write_queue(pend_queue, p_q_f_name) == -1:
             print 'Error, failed writing submission queue item to %s' % (p_q_f_name, )
 
         # update active queue
         active_file = CONTROL_DIR + '/' + ACTIVE_QUEUE
-        if write_queue(act_queue, active_file) != -1:
-            print 'Success, written active item %s to %s' % (str(act_queue), active_file, )
+        if write_queue(active_queue, active_file) != -1:
+            print 'Success, written active item %s to %s' % (str(active_queue), active_file, )
     #else:
         #print 'Pending queue is empty'
 
-
-    if first_item != []:
+    print 'first item on queue %s' % str(first_item)
+    if len(first_item) > 0:
         print 'Info, will start downloading %s' % str(first_item)
 
         log_dir = CONTROL_DIR + '/logs'
@@ -547,10 +561,10 @@ def cron_run_queue():
 
         # record when the download completed
         first_item['TT_finished'] = time.time()
-        # update active queue now the system() call finished
-        act_queue = []
+        # set active queue empty now the system() call finished
+        active_queue = []
         active_file = CONTROL_DIR + '/' + ACTIVE_QUEUE
-        if write_queue(act_queue, active_file) == -1:
+        if write_queue(active_queue, active_file) == -1:
             print 'Error, failed to write empty active file'
         else:
             print 'Success, written empty active file'
@@ -687,11 +701,11 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle):
 
     else:
         p_force = 'n'
-        if "force_redownload" in CGI_PARAMS :
+        if 'force_redownload' in CGI_PARAMS :
             p_force = 'y'
 
         p_transrez = ''
-        if "transrez" in CGI_PARAMS :
+        if 'transrez' in CGI_PARAMS :
             p_transrez = CGI_PARAMS.getvalue('transrez')
 
         # set type & quality - by default use video mode
@@ -779,6 +793,47 @@ def page_downloaded():
 
 
 #####################################################################################################################
+def page_episodes(p_pid, p_mediatype):
+    """page of episodes - pid is a brand - and expand the result"""
+
+    try:
+        url_key = 'search_episodes_video'
+        if p_mediatype == 'audio':
+            url_key = 'search_episodes_audio'
+
+        #print "sse: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />" % (p_brand, p_mediatype, url_key, )
+
+        beforesubst = URL_LIST[url_key]
+        url_with_query = beforesubst.format(p_pid)
+
+        opener = urllib2.build_opener()
+        opener.addheaders = [('User-agent', USAG)]
+        json_data = json.load(opener.open(url_with_query))
+
+        if DBG_LEVEL > 1:
+            print '<pre>'
+            print 'doing episode search by %s with URL %s' % (p_pid, url_with_query, )
+            print '=== episode search result ==='
+            print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
+            print '</pre>'
+
+
+        print '  <table border="1">'
+        print '    <tr>'
+        print '      <th colspan="7">Episodes for <i>%s</i></th>' % (p_pid, )
+        print '    </tr>'
+        print '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
+        #if 'episode_recommendations' in json_data and 'elements' in json_data['episode_recommendations']:
+        if 'programme_episodes' in json_data:
+            if 'elements' in json_data['programme_episodes']:
+                print_program_listing_rows(json_data['programme_episodes']['elements'], p_mediatype, 'id')
+        print '  </table>'
+
+    except urllib2.HTTPError:
+        print 'search_show_episodes: Exception urllib2.HTTPError'
+
+
+#####################################################################################################################
 def page_highlights():
     """this shows the BBCs highlights program listings"""
 
@@ -806,6 +861,15 @@ def page_highlights():
 
     except urllib2.HTTPError:
         print 'page_highlights: Exception urllib2.HTTPError'
+
+
+#####################################################################################################################
+def page_illegal_param(illegal_param_count):
+    """parameter being passed has invalid format, possibly indicating hack
+    attack"""
+
+    print '<h1>Illegal Parameter</h1>.
+    print '%d illegal parameters found. % illegal_param_count
 
 
 #####################################################################################################################
@@ -1074,42 +1138,6 @@ def page_search(p_sought):
 
         print '  </table>'
 
-#####################################################################################################################
-def page_upgrade_check():
-    """the upgrade check page"""
-
-
-    ################################################
-    # see if this script is up to date
-    githubhash_self = get_github_hash_self()
-    githash_self    = get_githash_self()
-
-    print "<p>"
-    print "github hash of this file %s<br />\n" % (githubhash_self, )
-    print "git hash of this file %s<br />\n" % (githash_self, )
-
-    githubhash_get_iplayer = get_github_hash_get_iplayer()
-    githash_get_iplayer     = get_githash_get_iplayer()
-
-    print "github hash of get_iplayer %s<br />\n" % (githubhash_get_iplayer, )
-    print "git hash of get_iplayer %s<br />\n" % (githash_get_iplayer, )
-
-
-    print "</p>\n<p>"
-
-    if (githubhash_self == githash_self):
-        print "Great, this program is the same as the version on github.\n<br />\n"
-    else:
-        print "This program appears to be out of date, please update it.\n<br />\n"
-
-
-    if (githubhash_get_iplayer == githash_get_iplayer):
-        print "Great, the get_iplayer program is the same as the version on github.\n<br />\n"
-    else:
-        print "The get_iplayer program appears to be out of date, please update it.\n<br />\n"
-
-    print "</p>"
-
 
 #####################################################################################################################
 def page_settings():
@@ -1212,13 +1240,35 @@ def page_transcode(p_submit, p_transcode_inodes):
 
 
 #####################################################################################################################
-def page_illegal_param(illegal_param_count):
-    """parameter being passed has invalid format, possibly indicating hack
-    attack"""
+def page_upgrade_check():
+    """the upgrade check page"""
 
-    print "<h1>Illegal Parameter</h1>"
-    print "%d illegal parameters found" % illegal_param_count
 
+    ################################################
+    # see if this script is up to date
+    githubhash_self        = get_github_hash_self()
+    githash_self           = get_githash_self()
+    githubhash_get_iplayer = get_github_hash_get_iplayer()
+    githash_get_iplayer    = get_githash_get_iplayer()
+
+    print '<p>github hash of this file %s<br />\n' % (githubhash_self, )
+    print 'git hash of this file %s<br />\n' % (githash_self, )
+    print 'github hash of get_iplayer %s<br />\n' % (githubhash_get_iplayer, )
+    print 'git hash of get_iplayer %s</p>' % (githash_get_iplayer, )
+
+    print '<p>'
+    if (githubhash_self == githash_self):
+        print 'Great, this program is the same as the version on github.\n<br />\n'
+    else:
+        print 'This program appears to be out of date, please update it.\n<br />\n'
+
+
+    if (githubhash_get_iplayer == githash_get_iplayer):
+        print 'Great, the get_iplayer program is the same as the version on github.\n<br />\n'
+    else:
+        print 'The get_iplayer program appears to be out of date, please update it.\n<br />\n'
+
+    print '</p>'
 
 
 #####################################################################################################################
@@ -1226,22 +1276,6 @@ def pid_to_download_link(p_pid, p_mediatype, p_title, p_subtitle):
     """a handy helper function to show a pid as a link to the download page"""
 
     return '<a href="?page=download&pid=%s&mediatype=%s&title=%s&subtitle=%s">download</a>' % (p_pid, p_mediatype, p_title, p_subtitle, )
-
-
-#######################################################################################################################
-def print_select_resolution():
-    """prints an HTML SELECT of standard resolutions for transcoding"""
-
-    print '<select name="transrez">\n'                               \
-          '\t<option value="">Don\'t transcode</option>\n'           \
-          '\t<option value="original">original resolution</option>\n'\
-          '\t<option value="1920x1080">1920x1080 1080p</option>\n'   \
-          '\t<option value="1280x720">1280x720 720p</option>\n'      \
-          '\t<option value="1024x600">1024x600 WVGA</option>\n'      \
-          '\t<option value="720x576">720x576 PAL</option>\n'         \
-          '\t<option value="720x416">720x416 NTSC</option>\n'        \
-          '</select>\n'
-
 
 
 #####################################################################################################################
@@ -1293,26 +1327,6 @@ def print_queue_as_html_table(q_data):
         print 'empty'
 
     print '',
-
-
-
-#####################################################################################################################
-def read_queue(queue, queue_file_name):
-    """read a queue file and returns number of lines read, or -1 for error"""
-
-    queue_count = -1
-    if os.path.isfile(queue_file_name):
-        try:
-            with open(queue_file_name) as infile:
-                queue.extend(json.load(infile))
-
-            infile.close()
-            queue_count = 0
-        except OSError:
-            # ignore when file can't be opened
-            print 'Error, read_queue couldn\t open file %s for reading' % (queue_file_name, )
-
-    return(queue_count)
 
 
 #####################################################################################################################
@@ -1372,45 +1386,38 @@ def print_program_listing_rows(jrows, p_mediatype, id_tag_name):
                 search_show_brand(j_pid, p_mediatype)
 
 
+#######################################################################################################################
+def print_select_resolution():
+    """prints an HTML SELECT of standard resolutions for transcoding"""
+
+    print '<select name="transrez">\n'                               \
+          '\t<option value="">Don\'t transcode</option>\n'           \
+          '\t<option value="original">original resolution</option>\n'\
+          '\t<option value="1920x1080">1920x1080 1080p</option>\n'   \
+          '\t<option value="1280x720">1280x720 720p</option>\n'      \
+          '\t<option value="1024x600">1024x600 WVGA</option>\n'      \
+          '\t<option value="720x576">720x576 PAL</option>\n'         \
+          '\t<option value="720x416">720x416 NTSC</option>\n'        \
+          '</select>\n'
+
+
 #####################################################################################################################
-def page_episodes(p_pid, p_mediatype):
-    """page of episodes - pid is a brand - and expand the result"""
+def read_queue(queue, queue_file_name):
+    """read a queue file and returns number of lines read, or -1 for error"""
 
-    try:
-        url_key = 'search_episodes_video'
-        if p_mediatype == 'audio':
-            url_key = 'search_episodes_audio'
+    queue_count = -1
+    if os.path.isfile(queue_file_name):
+        try:
+            with open(queue_file_name) as infile:
+                queue.extend(json.load(infile))
 
-        #print "sse: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />" % (p_brand, p_mediatype, url_key, )
+            infile.close()
+            queue_count = len(queue)
+        except OSError:
+            # ignore when file can't be opened
+            print 'Error, read_queue couldn\t open file %s for reading' % (queue_file_name, )
 
-        beforesubst = URL_LIST[url_key]
-        url_with_query = beforesubst.format(p_pid)
-
-        opener = urllib2.build_opener()
-        opener.addheaders = [('User-agent', USAG)]
-        json_data = json.load(opener.open(url_with_query))
-
-        if DBG_LEVEL > 1:
-            print '<pre>'
-            print 'doing episode search by %s with URL %s' % (p_pid, url_with_query, )
-            print '=== episode search result ==='
-            print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '</pre>'
-
-
-        print '  <table border="1">'
-        print '    <tr>'
-        print '      <th colspan="7">Episodes for <i>%s</i></th>' % (p_pid, )
-        print '    </tr>'
-        print '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
-        #if 'episode_recommendations' in json_data and 'elements' in json_data['episode_recommendations']:
-        if 'programme_episodes' in json_data:
-            if 'elements' in json_data['programme_episodes']:
-                print_program_listing_rows(json_data['programme_episodes']['elements'], p_mediatype, 'id')
-        print '  </table>'
-
-    except urllib2.HTTPError:
-        print 'search_show_episodes: Exception urllib2.HTTPError'
+    return(queue_count)
 
 
 #####################################################################################################################
@@ -1449,7 +1456,6 @@ def search_show_brand(p_brand, p_mediatype):
         print 'search_show_brand: Exception urllib2.HTTPError'
 
 
-
 #####################################################################################################################
 def web_interface():
     """this is the function which produces the web interface, as opposed
@@ -1459,7 +1465,7 @@ def web_interface():
 
 
     enable_dev_mode = 0
-    if ("development" in CGI_PARAMS):
+    if ('development' in CGI_PARAMS):
         enable_dev_mode = 1
 
     #print 'Content-Type: text/plain'    # plain text for extreme debugging
@@ -1509,14 +1515,14 @@ def web_interface():
         if 'pid' in CGI_PARAMS:
             p_pid = CGI_PARAMS.getvalue('pid')
             if bool(re.compile('^[0-9A-Za-z.]+\Z').match(p_pid)) == False:
-                print "p_pid is illegal\n"
+                print 'p_pid is illegal\n'
                 illegal_param_count += 1
 
         p_mediatype = ''
         if 'mediatype' in CGI_PARAMS:
             p_mediatype = CGI_PARAMS.getvalue('mediatype')
             if p_mediatype not in MEDIATYPES:
-                print "p_mediatype is illegal\n"
+                print 'p_mediatype is illegal\n'
                 illegal_param_count += 1
 
 
@@ -1524,7 +1530,7 @@ def web_interface():
         if 'file' in CGI_PARAMS:
             p_file = CGI_PARAMS.getvalue('file')
             if bool(re.compile('^[0-9A-Za-z-_.]+\Z').match(p_file)) == False:
-                print "p_file is illegal\n"
+                print 'p_file is illegal\n'
                 illegal_param_count += 1
 
         p_transcode_inodes = []
@@ -1546,7 +1552,7 @@ def web_interface():
         if illegal_param_count > 0:
             page_illegal_param(illegal_param_count)
 
-        elif "page" in CGI_PARAMS :
+        elif 'page' in CGI_PARAMS :
 
             p_page = CGI_PARAMS.getvalue('page')
 
@@ -1611,7 +1617,7 @@ def web_interface():
         #page_jwplay6()
         #page_highlights()
         #page_popular()
-        #page_search("doctor who")
+        #page_search('doctor who')
         #page_settings()
         #page_queues()
 
@@ -1653,7 +1659,6 @@ else:
         cron_run_queue()
     else:
         print 'Error, unknown argument %s' % (sys.argv[1], )
-
 
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
