@@ -44,5 +44,5 @@ ENV APACHE_LOCK_DIR /var/lock/apache2
 
 EXPOSE 80
 
-CMD ["/usr/sbin/apache2", "-D", "FOREGROUND"]
+CMD service cron start && /usr/sbin/apache2 -DFOREGROUND
 
