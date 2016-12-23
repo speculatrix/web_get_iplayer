@@ -3,7 +3,7 @@ MAINTAINER Christian Ashby <docker@cashby.me.uk>
 # Install OS package prerequisites and configure apache
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y screen apache2 python wget build-essential cron && \
+    apt-get install -y screen apache2 python wget build-essential cron ffmpeg && \
     mkdir /var/lock/apache2 && \
     a2enmod cgi
 # Install development prerequisites

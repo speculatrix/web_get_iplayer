@@ -453,19 +453,22 @@ def cron_run_queue():
     sqi = 0         # count submission queue entries, -1 if queue couldn't be read
     s_q_f_name = CONTROL_DIR + '/' + SUBMIT_QUEUE
     s_q_f_tmp_name = s_q_f_name + '.tmp'
+    #print 'Debug, submit queue file name %s' % (s_q_f_name, )
     if os.path.isfile(s_q_f_name):
         os.rename(s_q_f_name, s_q_f_tmp_name)
         sqi = read_queue(sub_queue, s_q_f_tmp_name)
         os.remove(s_q_f_tmp_name)
-
-    if sqi > 0:
-        pend_queue.extend(sub_queue)
-
+        if sqi == -1:
+            print 'Error, aborting cron job, couldn\'t read submission queue file'
+            exit(1)
+        else:
+            pend_queue.extend(sub_queue)
 
     # recently completed
     recent_queue = []
     rci = 0         # count recent entries, -1 if queue couldn't be read
     r_c_f_name = CONTROL_DIR + '/' + RECENT_ITEMS
+    #print 'Debug, recent items file name %s' % (r_c_f_name, )
     if os.path.isfile(r_c_f_name):
         rci = read_queue(recent_queue, r_c_f_name)
         if rci == -1:
@@ -473,7 +476,6 @@ def cron_run_queue():
             exit(1)
     else:
         print 'Info, recent items list hasn\'t been created'
-
 
     first_item = []
     if len(pend_queue) > 0:
