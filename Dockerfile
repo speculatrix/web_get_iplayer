@@ -3,9 +3,10 @@ MAINTAINER Christian Ashby <docker@cashby.me.uk>
 # Install OS package prerequisites and configure apache
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y screen apache2 python wget build-essential cron libav-tools && \
+    apt-get install -y screen apache2 python wget build-essential cron libav-tools rsyslog && \
     mkdir /var/lock/apache2 && \
-    a2enmod cgi
+    a2enmod cgi && \
+    echo "ServerName web_get_iplayer" >> /etc/apache2/sites-enabled/000-default.conf
 # Install development prerequisites
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libssl-dev libhtml-parser-perl libhttp-cookies-perl libwww-perl libxml-simple-perl
 # Install the rtmpdump package (TODO: need a -latest.tgz download ideally!)
@@ -24,18 +25,19 @@ RUN chmod +x web_get_iplayer.py
 COPY web_get_iplayer.cron.sh .
 RUN chmod +x web_get_iplayer.cron.sh
 COPY _etc_cron.d_web_get_iplayer /etc/cron.d/web_get_iplayer 
+RUN chmod g-w /etc/cron.d/web_get_iplayer
 # Configure web_get_iplayer
 WORKDIR /var/lib
 RUN mkdir web_get_iplayer
 WORKDIR /var/lib/web_get_iplayer
 RUN chgrp 33 . && chmod g+ws . && \
     touch web_get_iplayer.settings && chgrp 33 web_get_iplayer.settings && chmod g+w web_get_iplayer.settings && \
-    mkdir /home/iplayer && chgrp 33 /home/iplayer && chmod g+ws /home/iplayer && \
     touch /var/www/.swfinfo && chown 33:33 /var/www/.swfinfo && chmod g+w /var/www/.swfinfo && \
     mkdir /var/www/.get_iplayer && chgrp 33 /var/www/.get_iplayer && chmod g+ws /var/www/.get_iplayer && \
     chown 33:33 /var/www && \
     ln -s `which rtmpdump` /usr/lib/cgi-bin/rtmpdump
-# Run get_iplayer for the first time
+# Fix cron issue (see http://stackoverflow.com/questions/21926465/issues-running-cron-in-docker-on-different-hosts)
+RUN cat /etc/pam.d/cron | grep -v pam_loginuid.so > /etc/pam.d/cron2 && mv /etc/pam.d/cron2 /etc/pam.d/cron
 # And do some clean-up
 CMD ["-m", "128"]
 ENV APACHE_RUN_USER www-data
@@ -46,7 +48,8 @@ ENV APACHE_PID_FILE /var/run/apache2.pid
 ENV APACHE_LOCK_DIR /var/lock/apache2
 
 EXPOSE 80
+VOLUME /home/iplayer
 
 USER 0
-CMD service cron start && /usr/sbin/apache2 -DFOREGROUND
+CMD service rsyslog start && service cron start && /usr/sbin/apache2 -DFOREGROUND
 
