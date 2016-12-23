@@ -52,7 +52,7 @@ CGI_PARAMS = cgi.FieldStorage()
 #####################################################################################################################
 # constants
 
-DBG_LEVEL = 2
+DBG_LEVEL = 0
 
 
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
