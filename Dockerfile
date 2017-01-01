@@ -3,10 +3,16 @@ MAINTAINER Christian Ashby <docker@cashby.me.uk>
 # Install OS package prerequisites and configure apache
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y screen apache2 python wget build-essential cron libav-tools rsyslog && \
+    apt-get install -y screen apache2 python wget build-essential cron rsyslog && \
     mkdir /var/lock/apache2 && \
     a2enmod cgi && \
     echo "ServerName web_get_iplayer" >> /etc/apache2/sites-enabled/000-default.conf
+# Install ffmpeg from backports
+RUN DEBIAN_FRONTEND=noninteractive echo "deb http://ftp.uk.debian.org/debian jessie-backports main" >> /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y ffmpeg
+COPY ts-to-mp4.sh /usr/local/bin
+RUN chmod +x /usr/local/bin/ts-to-mp4.sh
 # Install development prerequisites
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libssl-dev libhtml-parser-perl libhttp-cookies-perl libwww-perl libxml-simple-perl
 # Install the rtmpdump package (TODO: need a -latest.tgz download ideally!)
@@ -30,8 +36,9 @@ RUN chmod g-w /etc/cron.d/web_get_iplayer
 WORKDIR /var/lib
 RUN mkdir web_get_iplayer
 WORKDIR /var/lib/web_get_iplayer
+COPY web_get_iplayer.settings .
 RUN chgrp 33 . && chmod g+ws . && \
-    touch web_get_iplayer.settings && chgrp 33 web_get_iplayer.settings && chmod g+w web_get_iplayer.settings && \
+    chgrp 33 web_get_iplayer.settings && chmod g+w web_get_iplayer.settings && \
     touch /var/www/.swfinfo && chown 33:33 /var/www/.swfinfo && chmod g+w /var/www/.swfinfo && \
     mkdir /var/www/.get_iplayer && chgrp 33 /var/www/.get_iplayer && chmod g+ws /var/www/.get_iplayer && \
     chown 33:33 /var/www && \
