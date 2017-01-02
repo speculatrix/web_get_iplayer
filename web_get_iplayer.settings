@@ -1,0 +1,26 @@
+[user]
+http_proxy = 
+base_url = /iplayer
+download_args = --nopurge --nocopyright --flvstreamer /usr/lib/cgi-bin/rtmpdump --rtmptvopts "--swfVfy http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf" --raw --thumb --thumbsize 150
+flash_height = 720
+flash_width = 1280
+get_iplayer = /usr/lib/cgi-bin/get_iplayer
+iplayer_directory = /home/iplayer
+max_recent_items = 5
+quality_radio = best,flashaachigh,flashaacstd
+quality_video = best,flashhd,flashvhigh
+transcode_cmd = /usr/local/bin/ts-to-mp4.sh
+flv5enable = 1
+flv5uri = /jwmediaplayer-5.8
+flv5uriswf = /player.swf
+flv5urijs = /swfobject.js
+flv5key = 
+flv6enable = 1
+flv6uri = /jwplayer-6-11
+flv6urijs = /jwplayer.js
+flv6key = 
+flv7enable = 1
+flv7uri = /jwplayer-7.7.4
+flv7urijs = /jwplayer.js
+flv7key = 
+
