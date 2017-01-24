@@ -84,8 +84,6 @@ a transcode command. A useful script for this is flv-to-divx.sh, download it
 and make it executable. A good place to put it is /usr/local/bin , but you
 can configure its location.
 
-
-
 ## Known problems and shortcomings
 
 * sometimes programs don't show up in search but do on
@@ -105,5 +103,6 @@ can configure its location.
   https://github.com/get-iplayer/get_iplayer
 * the program simply tabulates the files in the downloads directory
 
+## Tips and Tricks
 
-
+* Use `--pid-recursive-noclips --pid-recursive` at the end of the `download_args` setting to allow for pids of series and programmes - this will download multiple files.
