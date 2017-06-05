@@ -3,7 +3,7 @@ MAINTAINER Christian Ashby <docker@cashby.me.uk>
 # Install OS package prerequisites and configure apache
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y screen apache2 python wget build-essential cron rsyslog libxml-libxml-perl && \
+    apt-get install -y screen apache2 python wget build-essential cron rsyslog && \
     mkdir /var/lock/apache2 && \
     a2enmod cgi && \
     echo "ServerName web_get_iplayer" >> /etc/apache2/sites-enabled/000-default.conf
