@@ -14,7 +14,7 @@ RUN DEBIAN_FRONTEND=noninteractive echo "deb http://ftp.uk.debian.org/debian jes
 COPY ts-to-mp4.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/ts-to-mp4.sh
 # Install development prerequisites
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libssl-dev libhtml-parser-perl libhttp-cookies-perl libwww-perl libxml-simple-perl
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libssl-dev libhtml-parser-perl libhttp-cookies-perl libwww-perl libxml-simple-perl libxml-libxml-perl
 # Install the rtmpdump package (TODO: need a -latest.tgz download ideally!)
 WORKDIR /tmp
 RUN wget http://rtmpdump.mplayerhq.hu/download/rtmpdump-2.3.tgz && \
