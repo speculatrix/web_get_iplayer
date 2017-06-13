@@ -62,7 +62,7 @@ CGI_PARAMS = cgi.FieldStorage()
 #####################################################################################################################
 # constants
 
-dbg_level = 1   # default value no debug
+dbg_level = 0   # default value no debug
 
 
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
@@ -115,6 +115,7 @@ VIDEO_FILE_SUFFIXES = [ '.avi',
 # it seems everybody has the same API key, so we'll use a very common USer AGent string to not draw attention to ourselves
 USAG    = 'BBCiPlayer/4.4.0.235 (Nexus5; Android 4.4.4)'
 API_KEY = 'q5wcnsqvnacnhjap7gzts9y6'
+#API_KEY = 'bLBgJDghrAMaZA1eSFB8TbqOTraEJbUa' # iplayer radio
 
 # these URLs have been discovered using tcpdump whilst watching the android iplayer app
 URL_LIST = {
@@ -127,8 +128,8 @@ URL_LIST = {
     'search_episodes_video' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}/episodes?rights=mobile&availability=available&page=1&per_page=200&api_key=' + API_KEY,
     'search_video_recomm'   : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}/recommendations?rights=mobile&availability=available&page=1&per_page=200&api_key=' + API_KEY,
 
+    'search_audio'         : 'http://search-suggest.api.bbci.co.uk/search-suggest/suggest?q={0}&format=suggest&category_site=programmes&category_media_type=audio&apikey=' + API_KEY,
     #'search_audio'          : 'http://data.bbc.co.uk/search-suggest/suggest?q={0}&scope=iplayer&format=bigscreen-2&mediatype=audio&mediaset=android-phone-rtmp-high&apikey=' + API_KEY,
-    'search_audio'          : 'http://search-suggest.api.bbci.co.uk/search-suggest/suggest?q={0}&format=suggest&category_site=programmes&category_media_type=audio&apikey=' + API_KEY,
     'search_audio_by_brand' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}?rights=mobile&availability=available&mediatype=audio&initial_child_count=1&api_key=' + API_KEY,
     'search_episodes_audio' : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}?rights=mobile&availability=available&mediatype=audio&api_key=' + API_KEY, #FIXME
     'search_audio_recomm'   : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}/recommendations?rights=mobile&availability=available&page=1&per_page=200&api_key=' + API_KEY, #FIXME
@@ -337,11 +338,12 @@ def check_load_config_file():
         print 'Fatal Error, config %s missing item\n' % config_file_name
         return config_bad
 
-    # FIXME: check that all the settings we know about were actually created
-    # in the my_settings hash, and add them and set to the default
-    # if necessary
+    # check that all the settings we know about were actually created
+    # in the my_settings hash
     for setting in SETTINGS_DEFAULTS:
-        if (!my_settings.get(SETTINGS_SECTION, setting):
+        try:
+            my_settings.get(SETTINGS_SECTION, setting)
+        except ConfigParser.NoOptionError:
             print 'Warning, there is no settings value for "%s", please go to settings, check values and save<br />' % (setting, )
 
     ########
@@ -454,8 +456,8 @@ def cron_run_queue():
     else:
         print 'Info, pending queue file didn\'t exist, it will be created'
 
-    # rename the submission queue file to a temporary name, then sleep for
-    # a second; this is to mitigate the race condition of the web interface
+    # rename the submission queue file to a temporary name, then sleep.
+    # this is to mitigate the race condition of the web interface
     # writing an entry just at that moment.
     sub_queue = []
     sqi = 0         # count submission queue entries, -1 if queue couldn't be read
@@ -463,7 +465,7 @@ def cron_run_queue():
     s_q_f_tmp_name = s_q_f_name + '.tmp'
     if os.path.isfile(s_q_f_name):
         os.rename(s_q_f_name, s_q_f_tmp_name)
-        time.sleep(1)
+        time.sleep(2)
         sqi = read_queue(sub_queue, s_q_f_tmp_name)
         os.remove(s_q_f_tmp_name)
 
@@ -1107,7 +1109,7 @@ def page_search(p_mediatype, p_sought):
         if (p_mediatype == 'video'):
             page_search_video(p_sought)
         elif (p_mediatype == 'audio'):
-            print 'Still being written<br />'
+            print '<b>Work in progress</b><br />'
             page_search_audio(p_sought)
 
 #####################################################################################################################
@@ -1120,11 +1122,9 @@ def page_search_audio(p_sought):
     print '  <table border="1" width="100%" >\n'
     try:
         print '    <tr>\n      <th colspan="7">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
-        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th><th>Duration</th>\n    </tr>'
+        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th>\n    </tr>'
         beforesubst = URL_LIST['search_audio']
         url_with_query = beforesubst.format(html_escape(p_sought))
-
-        print "url_with_query is %s<br />" % (url_with_query, )
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
@@ -1132,7 +1132,7 @@ def page_search_audio(p_sought):
 
         program_data = json_data['results']
 
-        if dbg_level > 0:
+        if dbg_level > 1:
             print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing audio search with URL %s' % (url_with_query, )
             print '<pre>=== full json dump of search result ==='
             #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
@@ -1143,8 +1143,34 @@ def page_search_audio(p_sought):
         if len(program_data):
             # show all the episodes first
             for j_row in program_data:
-                print "type %s" % (j_row['type'],)
-
+                #print 'type %s' % (j_row['type'],)
+                j_pid = j_row['uri'].split(':')[3]
+                j_type = j_row['type']
+                j_subtitle = ''
+                if 'subtitle' in j_row:
+                    j_subtitle = j_row['subtitle']
+                j_synopsis = ''
+                if 'synopsis' in j_row:
+                    j_synopsis = j_row['synopsis']
+                j_title = ''
+                if 'title' in j_row:
+                    j_title = j_row['title']
+                #print '    <tr><td colspan="7">%s</td></tr>' % (j_row, )
+                print '    <tr>\n'
+                if (j_type == 'episode'):
+                    b64_title = base64.b64encode(j_title)
+                    b64_subtitle = base64.b64encode(j_subtitle)
+                    print '      <td>%s</td>\n' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
+                elif (j_type == 'brand'):
+                    print '      <td>search brand</td>\n'
+                elif (j_type == 'series'):
+                    print '      <td>search series</td>\n'
+                print '      <td>%s</td>\n' \
+                      '      <td>%s</td>\n' \
+                      '      <td>%s</td>\n' \
+                      '      <td>%s</td>\n' \
+                      '      <td>%s</td>\n' \
+                      '    </tr>' % (j_pid, j_type, j_title, j_subtitle, j_synopsis, )
 
     except urllib2.HTTPError:
         print 'page_search: Audio Search - Exception urllib2.HTTPError'
@@ -1711,7 +1737,6 @@ def web_interface():
 
   </head>
 <body>
-  <h2 color="red">THIS VERSION HAS DISABLED AUDIO FUNCTIONS</h2>
 '''
 
     global dbg_level
@@ -1722,7 +1747,7 @@ def web_interface():
     if 'dbg_level' in CGI_PARAMS :
         dbg_level = int(CGI_PARAMS.getvalue("dbg_level"))
 
-    if (1 or dbg_level > 0):
+    if (dbg_level > 0):
         print 'Python errors at <a href="/python_errors" target="_new">/python_errors (new window)</a><br />'
 
 
