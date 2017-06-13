@@ -62,7 +62,7 @@ CGI_PARAMS = cgi.FieldStorage()
 #####################################################################################################################
 # constants
 
-DBG_LEVEL = 0   # default value of DBG_LEVEL
+dbg_level = 1   # default value no debug
 
 
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
@@ -76,34 +76,6 @@ CONTROL_DIR       = '/var/lib/web_get_iplayer'
 # the settings file is stored in the control directory
 SETTINGS_FILE     = 'web_get_iplayer.settings'
 SETTINGS_SECTION  = 'user'
-
-# a list of the different parameters the program uses
-SETTINGS_TAGS     = [   'http_proxy',
-                        'base_url',
-                        'download_args',
-                        'flash_height',
-                        'flash_width',
-                        'get_iplayer',
-                        'iplayer_directory',
-                        'max_recent_items',
-                        'max_trnscd_par',
-                        'quality_radio',
-                        'quality_video',
-                        'transcode_cmd',
-                        'Flv5Enable',
-                        'Flv5Uri',
-                        'Flv5UriSWF',
-                        'Flv5UriJS',
-                        'Flv5Key',
-                        'Flv6Enable',
-                        'Flv6Uri',
-                        'Flv6UriJS',
-                        'Flv6Key',
-                        'Flv7Enable',
-                        'Flv7Uri',
-                        'Flv7UriJS',
-                        'Flv7Key',
-                    ]
 
 # default values of the settings when being created
 SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                , # http proxy, blank if not set
@@ -174,9 +146,9 @@ HTML_ESCAPE_TABLE = {
 }
 
 HTML_UNESCAPE_TABLE = {
-    "&quot;" : '"'      ,
-    "&apos;": "'"       ,
-    "+": " "            ,
+    '&quot;':   '"'     ,
+    "&apos;":   "'"     ,
+    "+":        " "     ,
 }
 
 INPUT_FORM_ESCAPE_TABLE = {
@@ -368,6 +340,9 @@ def check_load_config_file():
     # FIXME: check that all the settings we know about were actually created
     # in the my_settings hash, and add them and set to the default
     # if necessary
+    for setting in SETTINGS_DEFAULTS:
+        if (!my_settings.get(SETTINGS_SECTION, setting):
+            print 'Warning, there is no settings value for "%s", please go to settings, check values and save<br />' % (setting, )
 
     ########
     # verify can write in the directory where files are downloaded
@@ -577,7 +552,7 @@ def cron_run_queue():
         print 'background task = %s' % (cmd, )
         os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
-        if DBG_LEVEL > 0:
+        if dbg_level > 0:
             print 'Cron job is about to run %s' % cmd
 
         #subprocess.check_call(cmd, stdout=output_file, stderror=output_file)
@@ -647,21 +622,30 @@ def html_escape(text):
 
 
 #####################################################################################################################
-def html_unescape(text):
+def html_unescape(in_text):
     """convert html special characters back to text"""
 
-    if '&' in text: # bypass string scan if unnecessary
-        return text
+    if (not '&' in in_text) and (not '+' in in_text): # bypass string scan if unnecessary
+        return in_text
 
-    text_len = len(text)
+    out_text = ''
+    text_len = len(in_text)
     pos = 0
     while pos < text_len:
-        print "%d %s" % (pos, text[pos], ),
-        if text[pos] == '&':
-            print ' !! '
-        pos += 1
+        if in_text[pos] == '+':
+            out_text += ' '
+            pos += 1
+        elif in_text[pos] == '&':
+            for ukey, uval in HTML_UNESCAPE_TABLE.iteritems():
+                ukey_len = len(ukey)
+                if in_text[pos:pos+ukey_len] == ukey:
+                    out_text += uval
+                    pos += ukey_len
+        else:
+            out_text += in_text[pos]
+            pos += 1
 
-    #return "".join(HTML_ESCAPE_TABLE.get(c, c) for c in text)
+    return out_text
 
 
 #####################################################################################################################
@@ -799,13 +783,14 @@ def page_downloaded(p_dir):
         print '      <th>JWPlayer6</th>'
     if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
         print '      <th>JWPlayer7</th>'
-    print '      <th>Download</th>'
-    print '      <th>Transcode</th>'
-    print '      <th>Delete</th>'
-    print '      <th>Size KB</th>'
-    print '      <th>Date</th>'
-    print '      <th>Name</th>'
-    print '    </tr>'
+
+    print '      <th>Download</th>' \
+          '      <th>Transcode</th>'\
+          '      <th>Delete</th>'   \
+          '      <th>Size KB</th>'  \
+          '      <th>Date</th>'     \
+          '      <th>Name</th>'     \
+          '    </tr>'
 
     full_dir = "%s/%s" % (my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), p_dir)
     file_list = os.listdir(full_dir)
@@ -850,20 +835,21 @@ def page_highlights():
         opener.addheaders = [('User-agent', USAG)]
         json_data = json.load(opener.open(URL_LIST[url_key]))
 
-        if DBG_LEVEL > 0:
+        if dbg_level > 0:
             print '<pre>FULL DUMP OF HIGHLIGHTS RESPONSE'
             print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
             print '</pre>'
 
-        print '  <table border="1">'
-        print '    <tr>'
-        print '      <th colspan="7">HIGHLIGHTS on TV</th>'
-        print '    </tr>'
-        print '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
+        print '  <table border="1">' \
+              '    <tr>' \
+              '      <th colspan="7">HIGHLIGHTS on TV</th>' \
+              '    </tr>' \
+              '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
+
         print_program_listing_rows(json_data['home_highlights']['elements'], 'video', 'tleo_id')
 
-        print '  </table>'
-        print '  </form>'
+        print '  </table>' \
+              '  </form>'
 
     except urllib2.HTTPError:
         print 'page_highlights: Exception urllib2.HTTPError'
@@ -943,12 +929,12 @@ def page_popular():
     try:
 
         # from a url
-        #req = urllib2.request(url_list[url_key], headers={ 'user-agent': USAG })
+        #req = urllib2.request(URL_LIST[url_key], headers={ 'user-agent': USAG })
         #json_data = json.load( urllib2.urlopen(req).read() )
 
         opener = urllib2.build_opener()
         opener.addheaders = [('user-agent', USAG)]
-        json_data = json.load(opener.open(url_list[url_key]))
+        json_data = json.load(opener.open(URL_LIST[url_key]))
 
         # from cached copy
         #json_filehandle = open('popular.json')
@@ -1089,7 +1075,7 @@ def page_recommend(p_pid, p_mediatype):
         print '    <tr>'
         print '    <tr><th colspan="7"><br /><br />Recommendations Related To %s</th></tr>' % (p_pid)
 
-        if 1 or DBG_LEVEL > 0:
+        if 1 or dbg_level > 0:
             print '    <tr><td colspan="7">%s</td></tr>' % (json.dumps(json_data, sort_keys=True, indent=4, separators=(',', ': ') ), )
 
         print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>\n    </tr>'
@@ -1108,9 +1094,9 @@ def page_search(p_mediatype, p_sought):
     print '<input type="hidden" name="page" value="search" />'
     print 'Search term: <input type="text" name="sought" value="%s" />' % (html_unescape(p_sought), )
 
-    print '<select name="mediatype">\n'                               \
-          '\t<option value="video">TV</option>\n'         \
-          '\t<option value="audio">Radio</option>\n'        \
+    print '<select name="mediatype">\n'                 \
+          '\t<option value="video">TV</option>\n'       \
+          '\t<option value="audio">Radio</option>\n'    \
           '</select>\n'
 
     print '<input type="submit" name="submit" value="search" />'
@@ -1118,15 +1104,54 @@ def page_search(p_mediatype, p_sought):
 
 
     if p_sought != '':
-        print 'doing a "%s" type search<br>\n' % (p_mediatype, )
         if (p_mediatype == 'video'):
-            page_search_tv(p_sought)
+            page_search_video(p_sought)
         elif (p_mediatype == 'audio'):
-            print 'Not written yet<br />'
+            print 'Still being written<br />'
+            page_search_audio(p_sought)
+
+#####################################################################################################################
+def page_search_audio(p_sought):
+    """page which uses the BBC iplayer API to search for programs which does free-text search"""
+
+
+    # present data returned by a audio search
+    p_mediatype = 'audio'
+    print '  <table border="1" width="100%" >\n'
+    try:
+        print '    <tr>\n      <th colspan="7">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
+        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th><th>Duration</th>\n    </tr>'
+        beforesubst = URL_LIST['search_audio']
+        url_with_query = beforesubst.format(html_escape(p_sought))
+
+        print "url_with_query is %s<br />" % (url_with_query, )
+
+        opener = urllib2.build_opener()
+        opener.addheaders = [('User-agent', USAG)]
+        json_data = json.load(opener.open(url_with_query))
+
+        program_data = json_data['results']
+
+        if dbg_level > 0:
+            print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing audio search with URL %s' % (url_with_query, )
+            print '<pre>=== full json dump of search result ==='
+            #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
+            print json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )
+            print '</pre><br/>'
+            print '      </td>\n    </tr>'
+
+        if len(program_data):
+            # show all the episodes first
+            for j_row in program_data:
+                print "type %s" % (j_row['type'],)
+
+
+    except urllib2.HTTPError:
+        print 'page_search: Audio Search - Exception urllib2.HTTPError'
 
 
 #####################################################################################################################
-def page_search_tv(p_sought):
+def page_search_video(p_sought):
     """page which uses the BBC iplayer API to search for programs which does free-text search"""
 
 
@@ -1134,19 +1159,18 @@ def page_search_tv(p_sought):
     p_mediatype = 'video'
     print '  <table border="1" width="100%" >\n'
     try:
-        print '    <tr>\n      <th colspan="7">Video search results for <i>%s</i></th>\n    </tr>''' % (p_sought, )
+        print '    <tr>\n      <th colspan="7">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
         print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th><th>Duration</th>\n    </tr>'
         beforesubst = URL_LIST['search_video']
-        url_with_query = beforesubst.format(p_sought)
+        url_with_query = beforesubst.format(html_escape(p_sought))
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
         json_data = json.load(opener.open(url_with_query))
 
-        # output of video search different from audio
         program_data = json_data[1]
 
-        if DBG_LEVEL > 0:
+        if dbg_level > 0:
             print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing video search with URL %s' % (url_with_query, )
             print '<pre>=== full json dump of search result ==='
             #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
@@ -1194,7 +1218,7 @@ def page_search_tv(p_sought):
             # output of video search different from audio
             program_data = json_data['results']
 
-            if DBG_LEVEL > 0:
+            if dbg_level > 0:
                 print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing audio search with URL %s' % (url_with_query, )
                 print '<pre>=== full json dump of search result ==='
                 print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
@@ -1238,7 +1262,7 @@ def page_settings():
     print '<table border="1" width="100%">'
 
 
-    for setting in SETTINGS_TAGS:
+    for setting in SETTINGS_DEFAULTS:
         setting_value = ''
 
         # get the value if possible from the URL/form
@@ -1411,7 +1435,7 @@ def print_video_listing_rows(j_rows, p_mediatype):
         else:
             prog_item = j_row
 
-        if DBG_LEVEL > 0:
+        if dbg_level > 0:
             print '    <tr bgcolor="#ddd">\n      <td colspan="7">print_video_listing_rows: prog_item json is <pre>\n%s</pre></td>\n    </tr>' % (json.dumps( prog_item, sort_keys=True, indent=4, separators=(',', ': ') ), )
 
         # extract program params and sanitise
@@ -1483,7 +1507,7 @@ def print_audio_listing_rows(j_rows, p_mediatype):
         else:
             prog_item = j_row
 
-        if DBG_LEVEL > 0:
+        if dbg_level > 0:
             print '    <tr bgcolor="#ddd">\n      <td colspan="7">print_audio_listing_rows: prog_item json is <pre>\n%s</pre></td>\n    </tr>' % (json.dumps( prog_item, sort_keys=True, indent=4, separators=(',', ': ') ), )
 
         # extract program params and sanitise
@@ -1605,7 +1629,7 @@ def search_show_brand(p_brand, p_mediatype):
         json_data = json.load(opener.open(url_with_query))
 
         print '    <tr>\n      <th colspan="7">%s Search Results For Brand <i>%s</i></th>\n    </tr>' % (p_mediatype, p_brand)
-        if DBG_LEVEL > 0:
+        if dbg_level > 0:
             print '    <tr>\n      <td colspan="7">results of %s brand search with URL %s<pre>' % (p_mediatype, url_with_query)
             print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
             print '</pre></td>\n    </tr>'
@@ -1636,7 +1660,7 @@ def search_show_episodes(p_pid, p_mediatype):
         opener.addheaders = [('User-agent', USAG)]
         json_data = json.load(opener.open(url_with_query))
 
-        if DBG_LEVEL > 1:
+        if dbg_level > 1:
             print '<tr><td colspan="7"><pre>'
             print 'doing episode search by %s with URL %s' % (p_pid, url_with_query, )
             print '=== episode search result ==='
@@ -1690,16 +1714,15 @@ def web_interface():
   <h2 color="red">THIS VERSION HAS DISABLED AUDIO FUNCTIONS</h2>
 '''
 
+    global dbg_level
     enable_dev_mode = 0
     if ('development' in CGI_PARAMS):
         enable_dev_mode = 1
 
-    #DBG_LEVEL = DBG_LEVEL
-    #if 'dbg_level' in CGI_PARAMS :
-        #DBG_LEVEL = int(CGI_PARAMS.getvalue("dbg_level"))
+    if 'dbg_level' in CGI_PARAMS :
+        dbg_level = int(CGI_PARAMS.getvalue("dbg_level"))
 
-
-    if (1 or DBG_LEVEL > 0):
+    if (1 or dbg_level > 0):
         print 'Python errors at <a href="/python_errors" target="_new">/python_errors (new window)</a><br />'
 
 
@@ -1722,7 +1745,7 @@ def web_interface():
 <a href="?page=settings">Settings</a>&nbsp;&nbsp;&nbsp;'
 <a href="?page=upgrade_check">Upgrade Check</a>&nbsp;&nbsp;&nbsp;'''
 
-        if DBG_LEVEL or enable_dev_mode:
+        if dbg_level or enable_dev_mode:
             print '<a href="?page=development">Development</a>&nbsp;&nbsp;&nbsp;'
             print '<a href="/python_errors/" target=_new>Python Errors</a>&nbsp;&nbsp;&nbsp;'
         print '<br />\n<br />'
@@ -1836,7 +1859,7 @@ def web_interface():
                 page_recommend(p_pid, p_mediatype)
 
             if p_page == 'search':
-                page_search(p_mediatype, html_escape(p_sought))
+                page_search(p_mediatype, p_sought)
 
             if p_page == 'settings':
                 page_settings()
