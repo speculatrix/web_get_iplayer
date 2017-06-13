@@ -67,8 +67,8 @@ dbg_level = 0   # default value no debug
 
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
 # this is hopefully the only thing you ever need to change
-#DOCROOT_DEFAULT   = '/var/www/html'
-DOCROOT_DEFAULT   = '/var/www/public/htdocs'
+DOCROOT_DEFAULT   = '/var/www/html'
+#DOCROOT_DEFAULT   = '/var/www/public/htdocs'
 
 # state files, queues, logs and so on are stored in this directory
 CONTROL_DIR       = '/var/lib/web_get_iplayer'
@@ -463,11 +463,13 @@ def cron_run_queue():
     sqi = 0         # count submission queue entries, -1 if queue couldn't be read
     s_q_f_name = os.path.join(CONTROL_DIR, SUBMIT_QUEUE)
     s_q_f_tmp_name = s_q_f_name + '.tmp'
+    #print 'Debug, submit queue file name %s' % (s_q_f_name, )
     if os.path.isfile(s_q_f_name):
         os.rename(s_q_f_name, s_q_f_tmp_name)
         time.sleep(2)
         sqi = read_queue(sub_queue, s_q_f_tmp_name)
         os.remove(s_q_f_tmp_name)
+<<<<<<< HEAD
 
     print 'Info, sub_queue is now %s' % (str(sub_queue), )
     if sqi > 0:
@@ -475,11 +477,23 @@ def cron_run_queue():
         if write_queue(pend_queue, p_q_f_name) == -1:
             print 'Error, failed writing pending queue item to file %s' % (p_q_f_name, )
 
+=======
+        if sqi == -1:
+            print 'Error, aborting cron job, couldn\'t read submission queue file'
+            exit(1)
+        else:
+            pend_queue.extend(sub_queue)
+>>>>>>> 743774ec185170ee07a00bf987882d086e8593f3
 
     # recently completed
     recent_queue = []
     rci = 0         # count recent entries, -1 if queue couldn't be read
+<<<<<<< HEAD
     r_c_f_name = os.path.join(CONTROL_DIR, RECENT_ITEMS)
+=======
+    r_c_f_name = CONTROL_DIR + '/' + RECENT_ITEMS
+    #print 'Debug, recent items file name %s' % (r_c_f_name, )
+>>>>>>> 743774ec185170ee07a00bf987882d086e8593f3
     if os.path.isfile(r_c_f_name):
         rci = read_queue(recent_queue, r_c_f_name)
         if rci == -1:
@@ -487,7 +501,6 @@ def cron_run_queue():
             exit(1)
     else:
         print 'Info, recent items list hasn\'t been created'
-
 
     first_item = []
     if len(pend_queue) > 0:

@@ -9,5 +9,5 @@
 
 MAILTO=root
 
-*/1 * * * *     wwwrun  /var/www/public/cgi-bin/web_get_iplayer.cron.sh
+*/1 * * * *     www-data  /usr/lib/cgi-bin/web_get_iplayer.cron.sh
 
