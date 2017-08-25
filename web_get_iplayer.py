@@ -67,8 +67,8 @@ dbg_level = 0   # default value no debug
 
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
 # this is hopefully the only thing you ever need to change
-DOCROOT_DEFAULT   = '/var/www/html'
-#DOCROOT_DEFAULT   = '/var/www/public/htdocs'
+#DOCROOT_DEFAULT   = '/var/www/html'
+DOCROOT_DEFAULT   = '/var/www/public/htdocs'
 
 # state files, queues, logs and so on are stored in this directory
 CONTROL_DIR       = '/var/lib/web_get_iplayer'
@@ -463,37 +463,27 @@ def cron_run_queue():
     sqi = 0         # count submission queue entries, -1 if queue couldn't be read
     s_q_f_name = os.path.join(CONTROL_DIR, SUBMIT_QUEUE)
     s_q_f_tmp_name = s_q_f_name + '.tmp'
-    #print 'Debug, submit queue file name %s' % (s_q_f_name, )
     if os.path.isfile(s_q_f_name):
         os.rename(s_q_f_name, s_q_f_tmp_name)
         time.sleep(2)
         sqi = read_queue(sub_queue, s_q_f_tmp_name)
         os.remove(s_q_f_tmp_name)
-<<<<<<< HEAD
 
-    print 'Info, sub_queue is now %s' % (str(sub_queue), )
-    if sqi > 0:
+    if sqi == -1:
+        print 'Warn, couldn\'t read submission queue file'
+    elif sqi > 0:
+        print 'Info, sub_queue is now %s' % (str(sub_queue), )
         pend_queue.extend(sub_queue)
         if write_queue(pend_queue, p_q_f_name) == -1:
             print 'Error, failed writing pending queue item to file %s' % (p_q_f_name, )
+    else: # sqi == 0
+        print 'Info, submission queue file is empty'
 
-=======
-        if sqi == -1:
-            print 'Error, aborting cron job, couldn\'t read submission queue file'
-            exit(1)
-        else:
-            pend_queue.extend(sub_queue)
->>>>>>> 743774ec185170ee07a00bf987882d086e8593f3
 
     # recently completed
     recent_queue = []
     rci = 0         # count recent entries, -1 if queue couldn't be read
-<<<<<<< HEAD
     r_c_f_name = os.path.join(CONTROL_DIR, RECENT_ITEMS)
-=======
-    r_c_f_name = CONTROL_DIR + '/' + RECENT_ITEMS
-    #print 'Debug, recent items file name %s' % (r_c_f_name, )
->>>>>>> 743774ec185170ee07a00bf987882d086e8593f3
     if os.path.isfile(r_c_f_name):
         rci = read_queue(recent_queue, r_c_f_name)
         if rci == -1:
@@ -501,6 +491,7 @@ def cron_run_queue():
             exit(1)
     else:
         print 'Info, recent items list hasn\'t been created'
+
 
     first_item = []
     if len(pend_queue) > 0:
@@ -525,10 +516,11 @@ def cron_run_queue():
 
     print 'first item on queue %s' % str(first_item)
     if len(first_item) > 0:
-        print 'Info, will start downloading %s' % str(first_item)
+        print 'Info, will start downloading %s' % (str(first_item), )
 
-        log_dir = os.path.join(CONTROL_DIR, '/logs')
+        log_dir = os.path.join(CONTROL_DIR, 'logs')
         if not os.path.isdir(log_dir):
+            print 'Info, CONTROL_DIR %s, need to make directory %s' % (CONTROL_DIR, log_dir, )
             os.mkdir(log_dir)
             #os.lchmod(log_dir, 0775)
 
@@ -1048,7 +1040,7 @@ def page_queues(p_pid):
     #file_list = os.listdir(CONTROL_DIR)
     #print '<pre>files in %s are:\n\t%s</pre>\n<br />\n<br />' % (CONTROL_DIR, str(file_list), )
 
-    log_dir = os.path.join(CONTROL_DIR, '/logs')
+    log_dir = os.path.join(CONTROL_DIR, 'logs')
     if os.path.isdir(log_dir):
         file_list = os.listdir(log_dir)
         print 'Log files in %s:\n<br />\n<ul>' % (log_dir, )
@@ -1060,7 +1052,7 @@ def page_queues(p_pid):
 
     print '<a name="loglisting">'
     if p_pid != '':
-        log_file_name = CONTROL_DIR + '/logs/' + p_pid
+        log_file_name = os.path.join(CONTROL_DIR, "logs", p_pid)
         if os.path.isfile(log_file_name):
             log_file_handle = open(log_file_name, 'r')
             log_file_contents = log_file_handle.read()
@@ -1774,13 +1766,13 @@ def web_interface():
         print '<br />\n<br />'
         page_settings()
     else:
-        print '''<a href="?page=downloaded">Downloaded</a>&nbsp;&nbsp;&nbsp;'
-<a href="?page=download">Download</a>&nbsp;&nbsp;&nbsp;'
-<a href="?page=highlights">Highlights</a>&nbsp;&nbsp;&nbsp;'
-<a href="?page=popular">Popular</a>&nbsp;&nbsp;&nbsp;'
-<a href="?page=queues">Queues & Logs</a>&nbsp;&nbsp;&nbsp;'
-<a href="?page=search">Search</a>&nbsp;&nbsp;&nbsp;'
-<a href="?page=settings">Settings</a>&nbsp;&nbsp;&nbsp;'
+        print '''<a href="?page=downloaded">Downloaded</a>&nbsp;&nbsp;&nbsp;
+<a href="?page=download">Download</a>&nbsp;&nbsp;&nbsp;
+<a href="?page=highlights">Highlights</a>&nbsp;&nbsp;&nbsp;
+<a href="?page=popular">Popular</a>&nbsp;&nbsp;&nbsp;
+<a href="?page=queues">Queues & Logs</a>&nbsp;&nbsp;&nbsp;
+<a href="?page=search">Search</a>&nbsp;&nbsp;&nbsp;
+<a href="?page=settings">Settings</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=upgrade_check">Upgrade Check</a>&nbsp;&nbsp;&nbsp;'''
 
         if dbg_level or enable_dev_mode:
