@@ -88,7 +88,7 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'max_recent_items'    : '5'                               , # maximum recent items
                       'max_trnscd_par'      : '1'                               , # maximum transcoding processes in parallel
                       'quality_radio'       : 'best,flashaachigh,flashaacstd'   , # flashaachigh, flashaacstd etc
-                      'quality_video'       : 'best,flashhd,flashvhigh'         , # decreasing priority
+                      'quality_video'       : 'best,hlshd,hlsvhigh,hlsstd'      , # decreasing priority
                       'transcode_cmd'       : '/usr/local/bin/ts-to-mp4.sh'     , # this command is passed two args input & output
                       'Flv5Enable'          : '1'                               , # whether to show the JWplayer 7 column
                       'Flv5Uri'             : '/jwmediaplayer-5.8'              , # URI where the JW "longtail" JW5 player was unpacked
