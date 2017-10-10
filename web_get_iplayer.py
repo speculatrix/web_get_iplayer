@@ -17,9 +17,9 @@ and broke the indexing/cataloguing functions in get_iplayer
 Released under GPLv3 or later by the author, Paul M, in 2015
 
 Get the JW player from here:
-    https://account.jwplayer.com/static/download/jwplayer-6.11.zip
-Create a jwplayer-6-11 directory in your htdocs directory and unpack the zip,
-remove the __MACOSX junk and move the contents of the jwplayer dir up a level
+    https://ssl.p.jwpcdn.com/player/download/jwplayer-7.12.8.zip
+Unpack that so that the content appear as a directory called jwplayer-7.12.8 
+under your htdocs directory; then in settings ensure Flv7Uri has the correct URI
 
 
 Please forgive the hacky nature of the code, this was my first python program of any size
@@ -80,7 +80,7 @@ SETTINGS_SECTION  = 'user'
 # default values of the settings when being created
 SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                , # http proxy, blank if not set
                       'base_url'            : '/iplayer'                        , # relative URL direct to the iplayer files
-                      'download_args'       : '--nopurge --nocopyright --flvstreamer ' + PATH_OF_SCRIPT + '/rtmpdump --rtmptvopts "--swfVfy http://www.bbc.co.uk/emp/releases/iplayer/revisions/617463_618125_4/617463_618125_4_emp.swf" --raw --thumb --thumbsize 150',
+                      'download_args'       : '--nopurge --nocopyright --raw --thumb --thumbsize 150',
                       'flash_height'        : '720'                             , # standard flashhd BBC video rez
                       'flash_width'         : '1280'                            , # ...
                       'get_iplayer'         : PATH_OF_SCRIPT + '/get_iplayer'   , # full get_iplayer path
@@ -100,7 +100,7 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'Flv6UriJS'           : '/jwplayer.js'                    , # the jscript of the JW6 player
                       'Flv6Key'             : ''                                , # JW Player 6 Key, leave blank if you don't have one
                       'Flv7Enable'          : '1'                               , # whether to show the JWplayer 7 column
-                      'Flv7Uri'             : '/jwplayer-7.7.4'                 , # URI where the JW "longtail" JW7 player was unpacked
+                      'Flv7Uri'             : '/jwplayer-7.12.8'                , # URI where the JW "longtail" JW7 player was unpacked
                       'Flv7UriJS'           : '/jwplayer.js'                    , # the jscript of the JW6 player
                       'Flv7Key'             : ''                                , # JW Player 7 Key, leave blank if you don't have one
                     }
@@ -667,7 +667,7 @@ def page_development(p_dev):
 
     url_key = 'development'
     try:
-        print '    <table border="1">'
+        print '    <table>'
         print '      <tr>\n        <td colspan="2">Development Page</td>\n      </tr>\n'
         print '      <tr>\n        <td>Query: <form method="get" action=""><input type="hidden" name="page" value="development"><input type="text" name="dev" value="%s" /><input type="submit" /></form>\n        </td>\n      </tr>\n' % (p_dev, )
 
@@ -702,7 +702,7 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle):
         print '  <input type="hidden" name="page" value="download" />'
         print '  <input type="hidden" name="title" value="%s" />' % (p_title, )
         print '  <input type="hidden" name="subtitle" value="%s" />' % (p_subtitle, )
-        print '  <table border="0">'
+        print '  <table>'
         print '    <tr><td colspan="2">Check details before beginning download</td></tr>\n'
         print '    <tr><td>Program ID</td><td><input type="text" name="pid" value="%s" /></td></tr>' % (p_pid, )
         print '    <tr><td>Title</td><td>'
@@ -781,7 +781,7 @@ def page_downloaded(p_dir):
     print '  <input type="checkbox" name="enable_delete" />Enable Delete&nbsp;&nbsp;&nbsp;<input type="checkbox" name="delete_image" />Delete Associated Image<br /><br />'
     print '  <input type="text" name="dir" value="%s"/>Directory<br /><br />' % (p_dir,)
 
-    print '  <table border="0">'
+    print '  <table>'
     print '    <tr>'
     print '      <th>&nbsp;</th>'
     if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
@@ -826,7 +826,7 @@ def page_downloaded(p_dir):
             print '    <td>%s</td>' % time.ctime(file_stat.st_mtime)
             print '    <td>%s</td>' % file_item
             print '  </tr>'
-            print '  <tr><td colspan="9"><hr /></td>\n</tr>'
+            #print '  <tr><td colspan="9"><hr /></td>\n</tr>'
 
     print '  </table>\n<input type="submit" name="submit" value="GO" />\n</form>\n'
 
@@ -847,7 +847,7 @@ def page_highlights():
             print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
             print '</pre>'
 
-        print '  <table border="1">' \
+        print '  <table>' \
               '    <tr>' \
               '      <th colspan="7">HIGHLIGHTS on TV</th>' \
               '    </tr>' \
@@ -952,9 +952,9 @@ def page_popular():
             print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
             print '</pre>'
 
-        print '  <table border="1">'
+        print '  <table>'
         print '    <tr>'
-        print '      <th colspan="7">popular on tv</th>'
+        print '      <th colspan="7"><font size=+2>Popular On TV</font></th>'
         print '    </tr>'
         print '      <th>action</th><th>pid</th><th>type</th><th>title</th><th>subtitle</th><th>synopsis</th><th>duration</th>'
         print_program_listing_rows(json_data['group_episodes']['elements'], 'video', 'tleo_id')
@@ -1078,7 +1078,7 @@ def page_recommend(p_pid, p_mediatype):
         opener.addheaders = [('User-agent', USAG)]
         json_data = json.load(opener.open(url_with_query))
 
-        print '  <table border="1">'
+        print '  <table>'
         print '    <tr>'
         print '    <tr><th colspan="7"><br /><br />Recommendations Related To %s</th></tr>' % (p_pid)
 
@@ -1124,7 +1124,7 @@ def page_search_audio(p_sought):
 
     # present data returned by a audio search
     p_mediatype = 'audio'
-    print '  <table border="1" width="100%" >\n'
+    print '  <table width="100%" >\n'
     try:
         print '    <tr>\n      <th colspan="7">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
         print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th>\n    </tr>'
@@ -1188,7 +1188,7 @@ def page_search_video(p_sought):
 
     # present data returned by a video search
     p_mediatype = 'video'
-    print '  <table border="1" width="100%" >\n'
+    print '  <table width="100%" >\n'
     try:
         print '    <tr>\n      <th colspan="7">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
         print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th><th>Duration</th>\n    </tr>'
@@ -1235,7 +1235,7 @@ def page_search_video(p_sought):
     # format, despite the query URL being very similar
     p_mediatype = 'video'
     if False:
-        print '  <table border="1" width="100%" >\n'
+        print '  <table width="100%" >\n'
         try:
             print '    <tr>\n      <th colspan="7">Audio search results for <i>%s</i></th>\n    </tr>''' % (p_sought, )
             print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th><th>Duration</th>\n    </tr>'
@@ -1290,10 +1290,11 @@ def page_settings():
 
     print '<form method="get" action="">'
     print '<input type="hidden" name="page" value="settings" />'
-    print '<table border="1" width="100%">'
+    print '<table>'
+    print '  <tr>\n    <th align="right">Setting</th><th>Value</th><th>Default</th>\n  </tr>'
 
 
-    for setting in SETTINGS_DEFAULTS:
+    for setting in sorted(SETTINGS_DEFAULTS):
         setting_value = ''
 
         # get the value if possible from the URL/form
@@ -1319,10 +1320,12 @@ def page_settings():
         my_settings.set(SETTINGS_SECTION, setting, setting_value)
 
 
-        print '    <tr>\n      <th>%s</th>' % (setting, )
-        print '      <td width="75%%"><input type="text" name="c_%s" value="%s" style="display:table-cell; width:100%%" /></td>\n    </tr>' % (setting, input_form_escape(setting_value), )
+        print '    <tr>\n      <td align="right">%s&nbsp;&nbsp;</td>' % (setting, )
+        print '      <td width="50%%"><input type="text" name="c_%s" value="%s" style="display:table-cell; width:100%%" /></td>' % (setting, input_form_escape(setting_value), )
+        print '      <td>&nbsp;%s</td>' % (SETTINGS_DEFAULTS[setting], )
+        print '    </tr>'
 
-    print '    <tr>\n     <td colspan="2" ><input type="submit" name="submit" value="submit" /></td>\n    </tr>'
+    print '    <tr>\n     <td align="center"><input type="reset" value="revert"></td><td align="center"><input type="submit" name="submit" value="submit" /></td><td></td>\n    </tr>'
     print '  </table>'
     print '  </form>'
 
@@ -1412,7 +1415,7 @@ def print_queue_as_html_table(q_data):
 
     if len(q_data) > 0:
         i = 0
-        print '<table border="1">'
+        print '<table>'
         print '\t<tr>'
         for key in QUEUE_FIELDS:
             if key[:3] == 'TT_':
@@ -1731,6 +1734,16 @@ def web_interface():
   <head>
     <title>web get iplayer</title>
     <style type="text/css">
+
+table {
+    border-collapse: collapse;
+    border-style: hidden;
+}
+
+table td, table th {
+    border: 1px solid black;
+}
+
     pre {
       white-space: pre-wrap;       /* Since CSS 2.1 */
       white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
