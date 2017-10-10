@@ -67,8 +67,8 @@ dbg_level = 0   # default value no debug
 
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
 # this is hopefully the only thing you ever need to change
-#DOCROOT_DEFAULT   = '/var/www/html'
-DOCROOT_DEFAULT   = '/var/www/public/htdocs'
+DOCROOT_DEFAULT   = '/var/www/html'
+#DOCROOT_DEFAULT   = '/var/www/public/htdocs'
 
 # state files, queues, logs and so on are stored in this directory
 CONTROL_DIR       = '/var/lib/web_get_iplayer'
