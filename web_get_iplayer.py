@@ -794,7 +794,6 @@ def page_downloaded(p_dir):
                 print ' selected'
             print '>%s</option>' % (file_name, )
     print '    </select>&nbsp;&nbsp;<input type="submit" name="submit" value="GO" />\n</form>\n<br /><br />'
-    
 
 
     full_dir = "%s/%s" % (my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), p_dir)
