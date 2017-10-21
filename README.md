@@ -73,16 +73,17 @@ Usually, if you've registered correctly, the download page will be
 https://dashboard.jwplayer.com/#/welcome
 
 Download the jwplayer-*version*.zip file, make a note of the licence key.
+Latest at: https://ssl.p.jwpcdn.com/player/download/jwplayer-7.12.8.zip
 Unpack the zip file into your htdocs directory, so it appears as 
 http://example/jw-player-*version*/ and ensure the appropriate relative URI
-is put into the configuration along with the licence key string.
+is put into the configuration (Flv7Uri) along with the licence key string.
 
 
-You can transcode the FLV files into other formats to play on other devices;
-mp4 is a popular choice. The UI offers this possibility, whereby it calls
-a transcode command. A useful script for this is flv-to-divx.sh, download it
-and make it executable. A good place to put it is /usr/local/bin , but you
-can configure its location.
+You can transcode the FLV and TS files into other formats to play on other
+devices; mp4 is a popular choice. The UI offers this possibility, whereby
+it calls a transcode command. A useful script for this is flv-to-divx.sh,
+download it and make it executable. A good place to put it is /usr/local/bin,
+but you can configure its location.
 
 ## Known problems and shortcomings
 
@@ -91,7 +92,7 @@ can configure its location.
   program ID manually into the download function
 * audio/radio search is poor at finding programs; reverse engineering
   the http API is not trivial, and is a work in progress
-* all the downloaded audio.video files live in the same directory
+* all the downloaded audio and video files live in the same directory
 
 
 **How it works**
