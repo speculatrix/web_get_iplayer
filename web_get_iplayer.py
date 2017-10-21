@@ -782,58 +782,76 @@ def page_downloaded(p_dir):
 
 
     print '  <form method="get" action="" />'
-    print '  <input type="hidden" name="page" value="downloaded" />'
-    print '  <input type="checkbox" name="enable_delete" />Enable Delete&nbsp;&nbsp;&nbsp;<input type="checkbox" name="delete_image" />Delete Associated Image<br /><br />'
-    print '  <input type="text" name="dir" value="%s"/>Directory<br /><br />' % (p_dir,)
+    print '    <input type="hidden" name="page" value="downloaded" />'
 
-    print '  <table>'
-    print '    <tr>'
-    print '      <th>&nbsp;</th>'
-    if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
-        print '      <th>JWPlayer5</th>'
-    if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
-        print '      <th>JWPlayer6</th>'
-    if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
-        print '      <th>JWPlayer7</th>'
+    print '    Choose Directory:&nbsp;<select name="dir">\n      <option value="">Top</option>'
+    file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+    for file_item in sorted(file_list):
+        if os.path.isdir(os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_item)):
+            file_name, file_extension = os.path.splitext(file_item)
+            print '      <option value="%s"' % (file_name, ),
+            if file_name == p_dir:
+                print ' selected'
+            print '>%s</option>' % (file_name, )
+    print '    </select>&nbsp;&nbsp;<input type="submit" name="submit" value="GO" />\n</form>\n<br /><br />'
+    
 
-    print '      <th>Download</th>' \
-          '      <th>Transcode</th>'\
-          '      <th>Delete</th>'   \
-          '      <th>Size KB</th>'  \
-          '      <th>Date</th>'     \
-          '      <th>Name</th>'     \
-          '    </tr>'
 
     full_dir = "%s/%s" % (my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), p_dir)
-    file_list = os.listdir(full_dir)
-    for file_item in sorted(file_list):
-        file_name, file_extension = os.path.splitext(file_item)
-        if file_extension in VIDEO_FILE_SUFFIXES:
-            file_stat = os.stat("%s/%s" % (full_dir, file_item, ))
-            print '  <tr>'
-            print '    <td align="center">',
-            file_name_jpg = "%s/%s.jpg" % (full_dir, file_name, )
-            if os.path.isfile(file_name_jpg):
-                print '<img src="%s/%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_name, ),
-            else:
-                print '&nbsp;',
-            print '</td>'
-            if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
-                print '    <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
-            if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
-                print '    <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
-            if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
-                print '    <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
-            print '    <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
-            print '    <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
-            print '    <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
-            print '    <td>%d</td>' % (file_stat.st_size / 1024)
-            print '    <td>%s</td>' % time.ctime(file_stat.st_mtime)
-            print '    <td>%s</td>' % file_item
-            print '  </tr>'
-            #print '  <tr><td colspan="9"><hr /></td>\n</tr>'
+    if not os.path.isdir(full_dir):
+        print '<p><b>Error, no such directory "%s"</b></p>' % (p_dir, )
+    else:
+        print '<p><b>Analysing directory "%s"</b></p>' % (full_dir, )
+        print '  <form method="get" action="" />'
+        print '    <input type="hidden" name="page" value="downloaded" />'
+        print '    <input type="checkbox" name="enable_delete" />Enable Delete&nbsp;&nbsp;&nbsp;<input type="checkbox" name="delete_image" />Delete Associated Image<br /><br />'
+        print '    <table>'
+        print '      <tr>'
+        print '        <th>&nbsp;</th>'
+        if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
+            print '        <th>JWPlayer5</th>'
+        if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
+            print '        <th>JWPlayer6</th>'
+        if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
+            print '        <th>JWPlayer7</th>'
 
-    print '  </table>\n<input type="submit" name="submit" value="GO" />\n</form>\n'
+        print '        <th>Download</th>\n' \
+              '        <th>Transcode</th>\n'\
+              '        <th>Delete</th>\n'   \
+              '        <th>Size KB</th>\n'  \
+              '        <th>Date</th>\n'     \
+              '        <th>Name</th>\n'     \
+              '      </tr>'
+
+        file_list = os.listdir(full_dir)
+        for file_item in sorted(file_list):
+            file_name, file_extension = os.path.splitext(file_item)
+            if file_extension in VIDEO_FILE_SUFFIXES:
+                file_stat = os.stat("%s/%s" % (full_dir, file_item, ))
+                print '    <tr>'
+                print '      <td align="center">',
+                file_name_jpg = "%s/%s.jpg" % (full_dir, file_name, )
+                if os.path.isfile(file_name_jpg):
+                    print '<img src="%s/%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_name, ),
+                else:
+                    print '&nbsp;',
+                print '</td>'
+                if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
+                    print '      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
+                    print '      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
+                    print '      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                print '      <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
+                print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
+                print '      <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
+                print '      <td>%d</td>' % (file_stat.st_size / 1024)
+                print '      <td>%s</td>' % time.ctime(file_stat.st_mtime)
+                print '      <td>%s</td>' % file_item
+                print '    </tr>'
+
+        print '    </table>'
+        print '  <input type="submit" name="submit" value="GO" />\n</form>\n'
 
 
 #####################################################################################################################
@@ -1702,7 +1720,7 @@ table td, table th {
         p_dir = ''
         if 'dir' in CGI_PARAMS:
             p_dir = CGI_PARAMS.getvalue('dir')
-            if not bool(re.compile('^[0-9A-Za-z-_.]+\\Z').match(p_dir)):
+            if not bool(re.compile('^[0-9A-Za-z_]+\\Z').match(p_dir)):
                 print 'p_dir is illegal\n'
                 illegal_param_count += 1
 
