@@ -173,6 +173,8 @@ TRNSCDE_ACT_QUEUE    = 'transcode_active.txt'  # active transcoding
 URL_GITHUB_HASH_SELF       = 'https://api.github.com/repos/speculatrix/web_get_iplayer/contents/web_get_iplayer.py'
 URL_GITHUB_HASH_GETIPLAYER = 'https://api.github.com/repos/get-iplayer/get_iplayer/contents/get_iplayer'
 
+# whitespace was used a lot above to make more readable, but it upsets pylint
+# Xpylint:enable=bad-whitespace
 
 #####################################################################################################################
 def get_github_hash_self():
@@ -496,6 +498,7 @@ def cron_run_queue():
 
     first_item = []
     if len(pend_queue) > 0:
+    #if pend_queue:
         # pop the first item off the pending queue, and rewrite it
         first_item = pend_queue.pop(0)
         if write_queue(pend_queue, p_q_f_name) == -1:
@@ -517,6 +520,7 @@ def cron_run_queue():
 
     print 'first item on queue %s' % str(first_item)
     if len(first_item) > 0:
+    #if first_item:
         print 'Info, will start downloading %s' % (str(first_item), )
 
         log_dir = os.path.join(CONTROL_DIR, 'logs')
@@ -530,7 +534,7 @@ def cron_run_queue():
         # assemble the command to call get_iplayer
         cmd = my_settings.get(SETTINGS_SECTION, 'get_iplayer') + ' ' + my_settings.get(SETTINGS_SECTION, 'download_args')
 
-        if first_item['force'] == 'y' :
+        if first_item['force'] == 'y':
             cmd = cmd + ' --force'
 
         if 'transrez' in first_item and first_item['transrez'] != '':
@@ -737,11 +741,11 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle):
 
     else:
         p_force = 'n'
-        if 'force_redownload' in CGI_PARAMS :
+        if 'force_redownload' in CGI_PARAMS:
             p_force = 'y'
 
         p_transrez = ''
-        if 'transrez' in CGI_PARAMS :
+        if 'transrez' in CGI_PARAMS:
             p_transrez = CGI_PARAMS.getvalue('transrez')
 
         # set type & quality - by default use video mode
@@ -833,7 +837,7 @@ def page_downloaded(p_dir):
 
 
 #####################################################################################################################
-def page_highlights():
+def page_highlights_video():
     """this shows the BBCs highlights program listings"""
 
     url_key = 'highlights'
@@ -854,13 +858,13 @@ def page_highlights():
               '    </tr>' \
               '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
 
-        print_program_listing_rows(json_data['home_highlights']['elements'], 'video', 'tleo_id')
+        print_video_listing_rows(json_data['home_highlights']['elements'])
 
         print '  </table>' \
               '  </form>'
 
     except urllib2.HTTPError:
-        print 'page_highlights: Exception urllib2.HTTPError'
+        print 'page_highlights_video: Exception urllib2.HTTPError'
 
 
 #####################################################################################################################
@@ -958,7 +962,7 @@ def page_popular():
         print '      <th colspan="7"><font size=+2>Popular On TV</font></th>'
         print '    </tr>'
         print '      <th>action</th><th>pid</th><th>type</th><th>title</th><th>subtitle</th><th>synopsis</th><th>duration</th>'
-        print_program_listing_rows(json_data['group_episodes']['elements'], 'video', 'tleo_id')
+        print_video_listing_rows(json_data['group_episodes']['elements'])
         print '  </table>'
 
     except urllib2.HTTPError:
@@ -980,6 +984,7 @@ def page_queues(p_pid):
         if queue_count == -1:
             print '<b>error</b>, failed reading file'
         elif len(queue) == 0:
+        #elif queue:
             print 'empty'
         else:
             print_queue_as_html_table(queue)
@@ -997,6 +1002,7 @@ def page_queues(p_pid):
         if queue_count == -1:
             print '<b>error</b>, failed reading file %s' % (quefile, )
         elif len(queue) == 0:
+        #elif queue:
             print 'empty'
         else:
             print_queue_as_html_table(queue)
@@ -1014,6 +1020,7 @@ def page_queues(p_pid):
         if queue_count == -1:
             print '<b>error</b>, failed reading file'
         elif len(queue) == 0:
+        #elif queue:
             print 'empty'
         else:
             print_queue_as_html_table(queue)
@@ -1030,6 +1037,7 @@ def page_queues(p_pid):
         if queue_count == -1:
             print '<b>error</b>, failed reading file'
         elif len(queue) == 0:
+        #elif queue:
             print 'empty'
         else:
             print_queue_as_html_table(queue)
@@ -1059,39 +1067,6 @@ def page_queues(p_pid):
             log_file_contents = log_file_handle.read()
             log_file_handle.close()
             print 'Log for pid: %s\n<br /><ul><pre>%s</pre></ul>' % (p_pid, log_file_contents, )
-
-
-#####################################################################################################################
-def page_recommend(p_pid, p_mediatype):
-    """page which finds recommended programs, give it a brand or episode pid"""
-
-    if p_mediatype == 'video' :
-        url_key = 'search_video_recomm'
-    else:
-        url_key = 'search_audio_recomm'
-
-    try:
-        beforesubst = URL_LIST[url_key]
-        url_with_query = beforesubst.format(p_pid)
-        print "page_recommend: pid %s, url_key %s, url %s<br />" % (p_pid, url_key, url_with_query, )
-
-        opener = urllib2.build_opener()
-        opener.addheaders = [('User-agent', USAG)]
-        json_data = json.load(opener.open(url_with_query))
-
-        print '  <table>'
-        print '    <tr>'
-        print '    <tr><th colspan="7"><br /><br />Recommendations Related To %s</th></tr>' % (p_pid)
-
-        if dbg_level > 1:
-            print '    <tr bgcolor="#ddd"><td colspan="7">%s</td></tr>' % (json.dumps(json_data, sort_keys=True, indent=4, separators=(',', ': ') ), )
-
-        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>\n    </tr>'
-        print_program_listing_rows(json_data['episode_recommendations']['elements'], p_mediatype, 'tleo_id')
-        print '  </table>'
-
-    except urllib2.HTTPError:
-        print 'page_recommend: Exception urllib2.HTTPError'
 
 
 #####################################################################################################################
@@ -1127,8 +1102,8 @@ def page_search_audio(p_sought):
     p_mediatype = 'audio'
     print '  <table width="100%" >\n'
     try:
-        print '    <tr>\n      <th colspan="7">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
-        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th>\n    </tr>'
+        print '    <tr>\n      <th colspan="6">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
+        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Synposis</th>\n    </tr>'
         beforesubst = URL_LIST['search_audio']
         url_with_query = beforesubst.format(html_escape(p_sought))
 
@@ -1139,7 +1114,7 @@ def page_search_audio(p_sought):
         program_data = json_data['results']
 
         if dbg_level > 1:
-            print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing audio search with URL %s' % (url_with_query, )
+            print '    <tr bgcolor="#ddd">\n      <td colspan="6">doing audio search with URL %s' % (url_with_query, )
             print '<pre>=== full json dump of search result ==='
             #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
             print json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )
@@ -1147,14 +1122,12 @@ def page_search_audio(p_sought):
             print '      </td>\n    </tr>'
 
         if len(program_data):
+        #if program_data:
             # show all the episodes first
             for j_row in program_data:
                 #print 'type %s' % (j_row['type'],)
                 j_pid = j_row['uri'].split(':')[3]
                 j_type = j_row['type']
-                j_subtitle = ''
-                if 'subtitle' in j_row:
-                    j_subtitle = j_row['subtitle']
                 j_synopsis = ''
                 if 'synopsis' in j_row:
                     j_synopsis = j_row['synopsis']
@@ -1165,8 +1138,7 @@ def page_search_audio(p_sought):
                 print '    <tr>\n'
                 if (j_type == 'episode'):
                     b64_title = base64.b64encode(j_title)
-                    b64_subtitle = base64.b64encode(j_subtitle)
-                    print '      <td>%s</td>\n' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
+                    print '      <td>%s</td>\n' % (pid_to_download_link(j_pid, p_mediatype, b64_title, ''), )
                 elif (j_type == 'brand'):
                     print '      <td><a href="?page=search">search brand<a></td>\n'
                 elif (j_type == 'series'):
@@ -1175,8 +1147,7 @@ def page_search_audio(p_sought):
                       '      <td>%s</td>\n' \
                       '      <td>%s</td>\n' \
                       '      <td>%s</td>\n' \
-                      '      <td>%s</td>\n' \
-                      '    </tr>' % (j_pid, j_type, j_title, j_subtitle, j_synopsis, )
+                      '    </tr>' % (j_pid, j_type, j_title, j_synopsis, )
 
     except urllib2.HTTPError:
         print 'page_search: Audio Search - Exception urllib2.HTTPError'
@@ -1211,61 +1182,22 @@ def page_search_video(p_sought):
                 print '</pre><br/>'
             print '      </td>\n    </tr>'
 
-        if len(program_data):
+        #if len(program_data):
+        if program_data:
             # show all the episodes first
             for j_row in program_data:
                 if j_row['tleo'][0]['type'] == 'episode':
                     search_show_episodes_video(j_row['tleo'][0]['pid'], j_row['tleo'][0]['type'], j_row['tleo'][0]['title'])
 
-            #print_program_listing_rows(program_data, 'video', 'pid')
+            # search for items which are brands or series
             print '<tr><td colspan="7">&nbsp;</td></tr>'
-            #print '<tr><td>'
             for j_row in program_data:
                 if j_row['tleo'][0]['type'] != 'episode':
-                    #search_show_brand_video(j_row['tleo'][0]['pid'], p_mediatype)
                     search_show_episodes_video(j_row['tleo'][0]['pid'], j_row['tleo'][0]['type'], j_row['tleo'][0]['title'])
-                #print 'pid: %s, type: %s, title: %s</br>' % (j_row['tleo'][0]['pid'], j_row['tleo'][0]['type'], j_row['tleo'][0]['title'], )
-            #print '</td></tr>'
 
     except urllib2.HTTPError:
         print 'page_search: Video Search - Exception urllib2.HTTPError'
     print '  </table>\n<br />\n<br />'
-
-
-    ###############################
-    # the data returned by an audio search has a totally different
-    # format, despite the query URL being very similar
-    p_mediatype = 'video'
-    if False:
-        print '  <table width="100%" >\n'
-        try:
-            print '    <tr>\n      <th colspan="7">Audio search results for <i>%s</i></th>\n    </tr>''' % (p_sought, )
-            print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th><th>Duration</th>\n    </tr>'
-            beforesubst = URL_LIST['search_audio']
-            url_with_query = beforesubst.format(p_sought)
-
-            opener = urllib2.build_opener()
-            opener.addheaders = [('User-agent', USAG)]
-            json_data = json.load(opener.open(url_with_query))
-
-            # output of video search different from audio
-            program_data = json_data['results']
-
-            if dbg_level > 0:
-                print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing audio search with URL %s' % (url_with_query, )
-                print '<pre>=== full json dump of search result ==='
-                print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-                #print json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )
-                #print '</pre>'
-                print '      </td>\n    /tr>'
-
-            if len(program_data):
-                print_program_listing_rows(program_data, 'audio', 'pid')
-
-        except urllib2.HTTPError:
-            print 'page_search: Audio Search - Exception urllib2.HTTPError'
-
-        print '  </table>'
 
 
 #####################################################################################################################
@@ -1301,7 +1233,7 @@ def page_settings():
 
         # get the value if possible from the URL/form
         cgi_param_name = 'c_' + setting
-        if cgi_param_name in CGI_PARAMS :
+        if cgi_param_name in CGI_PARAMS:
             setting_value = CGI_PARAMS.getvalue(cgi_param_name)
         else:
             # otherwise get it from the config file
@@ -1415,7 +1347,8 @@ def print_queue_as_html_table(q_data):
 
     #print '=== %s ===<br />', (str(q_data), )
 
-    if len(q_data) > 0:
+    #if len(q_data) > 0:
+    if q_data:
         i = 0
         print '<table>'
         print '\t<tr>'
@@ -1461,16 +1394,19 @@ def print_queue_as_html_table(q_data):
 
 
 #####################################################################################################################
-def print_video_listing_rows(j_rows, p_mediatype):
+def print_video_listing_rows(j_rows):
     """this is a helper function which prints programs rows in a standard form"""
 
-    for j_row in j_rows:
-        # audio search result dict has additional nesting
-        if ('tleo' in j_row and len(j_row['tleo'])):
-            prog_item = j_row['tleo'][0]
-        else:
-            prog_item = j_row
+    p_mediatype = 'video'
 
+    for j_row in j_rows:
+        ## audio search result dict has additional nesting
+        #if ('tleo' in j_row and len(j_row['tleo'])):
+        #    prog_item = j_row['tleo'][0]
+        #else:
+        #    prog_item = j_row
+
+        prog_item = j_row
         if dbg_level > 1:
             print '    <tr bgcolor="#ddd">\n      <td colspan="7">print_video_listing_rows: prog_item json is <pre>\n%s</pre></td>\n    </tr>' % (json.dumps( prog_item, sort_keys=True, indent=4, separators=(',', ': ') ), )
 
@@ -1516,8 +1452,8 @@ def print_video_listing_rows(j_rows, p_mediatype):
             if j_type == 'episode':
                 print '%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
                 print '<a href="?page=recommend&pid=%s&mediatype=%s">recommendations</a>' % (j_pid, p_mediatype, )
-            #if j_type == 'brand' or j_type == 'series':
-            if j_type == 'series':
+            if j_type == 'brand' or j_type == 'series':
+            #if j_type == 'series':
                 print '<a href="?page=episodes&pid=%s&mediatype=%s">more episodes</a>' % (j_pid, p_mediatype, )
             print '&nbsp;</td>'
 
@@ -1528,17 +1464,18 @@ def print_video_listing_rows(j_rows, p_mediatype):
             print '      <td>%s</td>' % (j_synsm )
             print '      <td>%s</td>' % (j_duration, )
             print '    </tr>'
-            #if j_type == 'brand':
-            #    search_show_brand_video(j_pid, p_mediatype)
 
 
 #####################################################################################################################
-def print_audio_listing_rows(j_rows, p_mediatype):
+def print_audio_listing_rows(j_rows):
     """this is a helper function which prints programs rows in a standard form"""
+
+    p_mediatype = 'audio'
 
     for j_row in j_rows:
         # audio search result dict has additional nesting
-        if ('tleo' in j_row and len(j_row['tleo'])):
+        #if ('tleo' in j_row and len(j_row['tleo'])):
+        if ('tleo' in j_row and j_row['tleo']):
             prog_item = j_row['tleo'][0]
         else:
             prog_item = j_row
@@ -1584,8 +1521,8 @@ def print_audio_listing_rows(j_rows, p_mediatype):
             if j_type == 'episode':
                 print '%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
                 print '<a href="?page=recommend&pid=%s&mediatype=%s">recommendations</a>' % (j_pid, p_mediatype, )
-            #if j_type == 'brand' or j_type == 'series':
-            if j_type == 'series':
+            if j_type == 'brand' or j_type == 'series':
+            #if j_type == 'series':
                 print '<a href="?page=episodes&pid=%s&mediatype=%s">more episodes</a>' % (j_pid, p_mediatype, )
             print '&nbsp;</td>'
 
@@ -1596,20 +1533,7 @@ def print_audio_listing_rows(j_rows, p_mediatype):
             print '      <td>%s</td>' % (j_synsm )
             print '      <td>%s</td>' % (j_duration, )
             print '    </tr>'
-            #if j_type == 'brand':
-                #search_show_brand_video(j_pid, p_mediatype)
 
-
-#####################################################################################################################
-def print_program_listing_rows(j_rows, p_mediatype, pid_idx_name):
-    """takes a json fragment and turns it into a bunch of rows in a table"""
-
-    if False:
-        print 'print_program_listing_rows decoding json as with pid idx name %s<br />' % (pid_idx_name, )
-    if (p_mediatype == 'video'):
-        print_video_listing_rows(j_rows, p_mediatype)
-    else:
-        print_audio_listing_rows(j_rows, p_mediatype)
 
 #######################################################################################################################
 def print_select_resolution():
@@ -1646,40 +1570,6 @@ def read_queue(queue, queue_file_name):
 
 
 #####################################################################################################################
-def search_show_brand_video(p_brand, p_mediatype):
-    """search by brand and expand the result"""
-
-
-    try:
-        url_key = 'search_video_by_brand'
-        if p_mediatype == 'audio':
-            url_key = 'search_audio_by_brand'
-
-        print '    <tr>\n      <td colspan="7">p_brand is %s, p_mediatype %s,  url_key is %s</td>\n    </tr>' % (p_brand, p_mediatype, url_key, )
-
-        beforesubst = URL_LIST[url_key]
-        url_with_query = beforesubst.format(p_brand)
-
-        opener = urllib2.build_opener()
-        opener.addheaders = [('User-agent', USAG)]
-        json_data = json.load(opener.open(url_with_query))
-
-        print '    <tr>\n      <th colspan="7">%s Search Results For Brand <i>%s</i></th>\n    </tr>' % (p_mediatype, p_brand)
-        if dbg_level > 0:
-            print '    <tr bgcolor="#ddd">\n      <td colspan="7">results of %s brand search with URL %s<pre>' % (p_mediatype, url_with_query)
-            if dbg_level > 1:
-                print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '</pre></td>\n    </tr>'
-
-        if (len(json_data['programmes']) > 0) and ('initial_children' in json_data['programmes'][0]):
-            print_program_listing_rows(json_data['programmes'][0]['initial_children'], p_mediatype, 'id')
-        print '    <tr>\n      <th colspan="7">End brand search</th>\n    </tr>'
-
-    except urllib2.HTTPError:
-        print '    <tr><td colspan="7">search_show_brand_video: Exception urllib2.HTTPError</td></tr>'
-
-
-#####################################################################################################################
 def search_show_episodes_video(p_pid, pid_type, title):
     """page of episodes - pid is a brand - and expand the result"""
 
@@ -1711,7 +1601,7 @@ def search_show_episodes_video(p_pid, pid_type, title):
         #if 'episode_recommendations' in json_data and 'elements' in json_data['episode_recommendations']:
         if 'programme_episodes' in json_data:
             if 'elements' in json_data['programme_episodes']:
-                print_program_listing_rows(json_data['programme_episodes']['elements'], 'video', 'id')
+                print_video_listing_rows(json_data['programme_episodes']['elements'])
 
     except urllib2.HTTPError:
         print 'search_show_episodes_video: Exception urllib2.HTTPError'
@@ -1764,7 +1654,7 @@ table td, table th {
     if ('development' in CGI_PARAMS):
         enable_dev_mode = 1
 
-    if 'dbg_level' in CGI_PARAMS :
+    if 'dbg_level' in CGI_PARAMS:
         dbg_level = int(CGI_PARAMS.getvalue("dbg_level"))
 
     if (dbg_level > 0):
@@ -1799,19 +1689,20 @@ table td, table th {
         ########
         # gather all the browser supplied CGI params and validate/sanitise
 
-        if 'enable_delete' in CGI_PARAMS :
+        if 'enable_delete' in CGI_PARAMS:
             print 'you chose enabled delete\n<br />\n'
             inode_list = CGI_PARAMS.getlist("delete_inode")
             del_img_flag = 0
-            if 'delete_image' in CGI_PARAMS :
+            if 'delete_image' in CGI_PARAMS:
                 del_img_flag = 1
-            if len(inode_list) :
+            #if len(inode_list):
+            if inode_list:
                 delete_files_by_inode(inode_list, del_img_flag)
 
         p_dir = ''
         if 'dir' in CGI_PARAMS:
             p_dir = CGI_PARAMS.getvalue('dir')
-            if not bool(re.compile('^[0-9A-Za-z-_.]+\Z').match(p_dir)):
+            if not bool(re.compile('^[0-9A-Za-z-_.]+\\Z').match(p_dir)):
                 print 'p_dir is illegal\n'
                 illegal_param_count += 1
 
@@ -1819,7 +1710,7 @@ table td, table th {
         p_file = ''
         if 'file' in CGI_PARAMS:
             p_file = CGI_PARAMS.getvalue('file')
-            if not bool(re.compile('^[0-9A-Za-z-_.]+\Z').match(p_file)):
+            if not bool(re.compile('^[0-9A-Za-z-_.]+\\Z').match(p_file)):
                 print 'p_file is illegal\n'
                 illegal_param_count += 1
 
@@ -1827,7 +1718,7 @@ table td, table th {
         p_pid = ''
         if 'pid' in CGI_PARAMS:
             p_pid = CGI_PARAMS.getvalue('pid')
-            if not bool(re.compile('^[0-9A-Za-z.]+\Z').match(p_pid)):
+            if not bool(re.compile('^[0-9A-Za-z.]+\\Z').match(p_pid)):
                 print 'p_pid is illegal\n'
                 illegal_param_count += 1
 
@@ -1857,7 +1748,7 @@ table td, table th {
         if illegal_param_count > 0:
             page_illegal_param(illegal_param_count)
 
-        elif 'page' in CGI_PARAMS :
+        elif 'page' in CGI_PARAMS:
 
             p_page = CGI_PARAMS.getvalue('page')
 
@@ -1883,7 +1774,7 @@ table td, table th {
                 page_development(p_dev)
 
             if p_page == 'highlights':
-                page_highlights()
+                page_highlights_video()
 
             if p_page == 'jwplay5':
                 page_jwplay5(p_dir, p_file)
@@ -1899,9 +1790,6 @@ table td, table th {
 
             if p_page == 'queues':
                 page_queues(p_pid)
-
-            if p_page == 'recommend':
-                page_recommend(p_pid, p_mediatype)
 
             if p_page == 'search':
                 page_search(p_mediatype, p_sought)
