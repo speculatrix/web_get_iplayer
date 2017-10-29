@@ -424,7 +424,7 @@ def check_load_config_file():
     # need swffile for the rtmpdump program to work
     swffile = expanduser("~") + '/' + '.swfinfo'
     if os.path.isfile(get_iplayer_binary) and not os.path.isfile(swffile):
-        print 'Error, file %s doesn\'t appear to exist.\nPlease do the following - needs root:\n# sudo touch %s && sudo chgrp %d: %s && sudo chmod g+w %s\n' % (swffile, swffile, my_egroup_id, swffile, swffile, )
+        print 'Error, file %s doesn\'t appear to exist.\nPlease do the following - needs root:\n# sudo touch %s && sudo chgrp %d %s && sudo chmod g+w %s\n' % (swffile, swffile, my_egroup_id, swffile, swffile, )
         config_bad = 1
 
 
