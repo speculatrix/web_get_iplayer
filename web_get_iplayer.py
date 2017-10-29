@@ -125,13 +125,13 @@ URL_LIST = {
     'popular'               : 'http://ibl.api.bbci.co.uk/ibl/v1/groups/popular/episodes?rights=mobile&page=2&per_page=20&availability=available&api_key=',
 
     'search_video'          : 'http://search-suggest.api.bbci.co.uk/search-suggest/suggest?q={0}&scope=iplayer&format=bigscreen-2&mediatype=video&mediaset=android-phone-rtmp-high&apikey=' + API_KEY,
-    'search_video_by_brand' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}?rights=mobile&availability=available&initial_child_count=1&api_key=' + API_KEY,
+    #'search_video_by_brand' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}?rights=mobile&availability=available&initial_child_count=1&api_key=' + API_KEY,
     'search_episodes_video' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}/episodes?rights=mobile&availability=available&page=1&per_page=200&api_key=' + API_KEY,
     'search_video_recomm'   : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}/recommendations?rights=mobile&availability=available&page=1&per_page=200&api_key=' + API_KEY,
 
     'search_audio'         : 'http://search-suggest.api.bbci.co.uk/search-suggest/suggest?q={0}&format=suggest&category_site=programmes&category_media_type=audio&apikey=' + API_KEY,
     #'search_audio'          : 'http://data.bbc.co.uk/search-suggest/suggest?q={0}&scope=iplayer&format=bigscreen-2&mediatype=audio&mediaset=android-phone-rtmp-high&apikey=' + API_KEY,
-    'search_audio_by_brand' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}?rights=mobile&availability=available&mediatype=audio&initial_child_count=1&api_key=' + API_KEY,
+    #'search_audio_by_brand' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}?rights=mobile&availability=available&mediatype=audio&initial_child_count=1&api_key=' + API_KEY,
     'search_episodes_audio' : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}?rights=mobile&availability=available&mediatype=audio&api_key=' + API_KEY, #FIXME
     'search_audio_recomm'   : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}/recommendations?rights=mobile&availability=available&page=1&per_page=200&api_key=' + API_KEY, #FIXME
 
@@ -1120,7 +1120,7 @@ def page_search_audio(p_sought):
     print '  <table width="100%" >\n'
     try:
         print '    <tr>\n      <th colspan="6">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
-        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Synposis</th>\n    </tr>'
+        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Synopsis</th>\n    </tr>'
         beforesubst = URL_LIST['search_audio']
         url_with_query = beforesubst.format(html_escape(p_sought))
 
@@ -1179,8 +1179,6 @@ def page_search_video(p_sought):
     p_mediatype = 'video'
     print '  <table width="100%" >\n'
     try:
-        print '    <tr>\n      <th colspan="7">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
-        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synposis</th><th>Duration</th>\n    </tr>'
         beforesubst = URL_LIST['search_video']
         url_with_query = beforesubst.format(html_escape(p_sought))
 
@@ -1192,22 +1190,26 @@ def page_search_video(p_sought):
 
         if dbg_level > 0:
             print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing video search with URL %s' % (url_with_query, )
-            if dbg_level > 0:
+            if dbg_level > 1:
                 print '<pre>=== full json dump of search result ==='
                 #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
                 print json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )
                 print '</pre><br/>'
             print '      </td>\n    </tr>'
 
-        #if len(program_data):
-        if program_data:
+        if len(program_data):
             # show all the episodes first
+            episode_heading_shown = 0
             for j_row in program_data:
                 if j_row['tleo'][0]['type'] == 'episode':
-                    search_show_episodes_video(j_row['tleo'][0]['pid'], j_row['tleo'][0]['type'], j_row['tleo'][0]['title'])
+                    if episode_heading_shown == 0:
+                        print '    <tr>\n      <th colspan="7">Video search results for <i>%s</i></th>\n    </tr>''' % (html_unescape(p_sought), )
+                        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synopsis</th><th>Duration</th>\n    </tr>'
+                        episode_heading_shown = 1
+                    print_video_listing_rows(j_row['tleo'])
 
             # search for items which are brands or series
-            print '<tr><td colspan="7">&nbsp;</td></tr>'
+            #print '<tr><td colspan="7">&nbsp;</td></tr>'
             for j_row in program_data:
                 if j_row['tleo'][0]['type'] != 'episode':
                     search_show_episodes_video(j_row['tleo'][0]['pid'], j_row['tleo'][0]['type'], j_row['tleo'][0]['title'])
@@ -1239,10 +1241,14 @@ def page_settings():
         print 'section %s doesn\'t exit' % SETTINGS_SECTION
         my_settings.add_section(SETTINGS_SECTION)
 
-    print '<form method="get" action="">'
-    print '<input type="hidden" name="page" value="settings" />'
-    print '<table>'
-    print '  <tr>\n    <th align="right">Setting</th><th>Value</th><th>Default</th>\n  </tr>'
+    print '<form method="get" action="">'                           \
+          '<input type="hidden" name="page" value="settings" />'    \
+          '<table>'                                                 \
+          '  <tr>'                                                  \
+          '    <th align="right">Setting</th>'                      \
+          '    <th>Value</th>'                                      \
+          '    <th>Default</th>\n'                                  \
+          '  </tr>'
 
 
     for setting in sorted(SETTINGS_DEFAULTS):
@@ -1435,10 +1441,10 @@ def print_video_listing_rows(j_rows):
         j_pid = ''
         if 'id' in prog_item:
             j_pid = prog_item['id']
+        elif 'pid' in prog_item:
+            j_pid = prog_item['pid']
         #elif 'tleo_id' in prog_item:
         #    j_pid = prog_item['tleo_id']
-        #if 'pid' in prog_item:
-        #    j_pid = prog_item['pid']
         #if 'uri' in prog_item:
         #    j_pid = prog_item['uri'].split(':')[3]
 
@@ -1592,11 +1598,9 @@ def search_show_episodes_video(p_pid, pid_type, title):
 
     try:
         url_key = 'search_episodes_video'
-
-        #print 'sse: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />' % (p_brand, p_mediatype, url_key, )
-
         beforesubst = URL_LIST[url_key]
         url_with_query = beforesubst.format(p_pid)
+        #print 'ssev: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />' % (p_brand, p_mediatype, url_key, )
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
@@ -1612,7 +1616,7 @@ def search_show_episodes_video(p_pid, pid_type, title):
 
 
         print '    <tr>'
-        print '      <th colspan="7">Episodes for <i>%s</i> (%s)</th>' % (title, p_pid, )
+        print '      <th colspan="7"><br />Video episodes for <i>%s</i> (%s)</th>' % (title, p_pid, )
         print '    </tr>'
         print '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
         #if 'episode_recommendations' in json_data and 'elements' in json_data['episode_recommendations']:
