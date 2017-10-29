@@ -4,9 +4,8 @@ a python wrapper to provide a web interface to get_iplayer
 
 ## Installation - part 0 - pre-requisites
 
-* install python2
-* on ubuntu 16.04, python3 is installed by default, so
-  "sudo apt-get install python" for
+* install python2 - on ubuntu 16.04, python3 is installed by default, so
+  "sudo apt-get install python"
 
 * install an http server that supports cgi-bin, e.g. apache2
 
