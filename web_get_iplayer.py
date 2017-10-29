@@ -1340,7 +1340,7 @@ def page_upgrade_check():
     print '<p>github hash of this file %s<br />\n' % (githubhash_self, )
     print 'git hash of this file %s<br />\n' % (githash_self, )
     print 'github hash of get_iplayer %s<br />\n' % (githubhash_get_iplayer, )
-    print 'git hash of get_iplayer %s</p>' % (githash_get_iplayer, )
+    print 'git hash of local get_iplayer %s</p>' % (githash_get_iplayer, )
 
     print '<p>'
     if (githubhash_self == githash_self):
