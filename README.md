@@ -49,10 +49,7 @@ e.g. what directories to create and what permissions to give them.
 
 Note that if it doesn't run at all, run it at the command line as the httpd
 user id to check python has all the libraries it needs, like this:
-* $ sudo -i
-* # su - wwwrun -s /bin/bash
-* $ cd /var/www/cgi-bin
-* $ ./web_get_iplayer.py
+* $ sudo -i -u ubuntu /usr/lib/cgi-bin/get_iplayer
 
 
 ## Installation - part 3 - the cron queue runner
