@@ -4,30 +4,44 @@ a python wrapper to provide a web interface to get_iplayer
 
 ## Installation - part 0 - pre-requisites
 
-* install python
-* install an http server that supports cgi-bin
-* download and build rtmpdump from https://rtmpdump.mplayerhq.hu/
-  and put the binary into the cgi-bin directory
+* install python2
+* on ubuntu 16.04, python3 is installed by default, so
+  "sudo apt-get install python" for
+
+* install an http server that supports cgi-bin, e.g. apache2
+
+* how to enable traditional cgi-bin behaviour in apache/httpd server for
+  Debian or Ubuntu:
+** cd /etc/apache2/mods-enabled/
+** sudo ln -s ../mods-available/cgi.load
+** sudo apachectl restart
+
 * download the get_iplayer program from
   https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
-  and put it into the cgi-bin directory, ensure it's made executable
+  and put it into the cgi-bin directory and make executable
+* on Debian or Ubuntu:
+** cd /usr/lib/cgi-bin/
+** sudo wget https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
+** sudo chmod ugo+x get_iplayer
+
 * (optional) get the JW Player if you wish to be able to play FLV
   videos embedded in the web page - see instructions in Playback.
 
 
-## Installation - part 1 - the web interface
+## Installation - part 1 - installing this web interface
 
-* start a root shell
-* change to your cgi-bin directory, e.g.
-  cd /var/www/cgi-bin
-* fetch the program with
+* download the web_get_iplayer.py from
   wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_get_iplayer.py
-* make executable
-  chmod ugo+x web_get_iplayer.py
+  and put it into the cgi-bin directory and make executable
+* on Debian or Ubuntu:
+** cd /usr/lib/cgi-bin/
+** sudo wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_get_iplayer.py
+** sudo chmod ugo+x web_get_iplayer.py
 
-Then access with your web browser, e.g. http://localhost/cgi-bin/web_get_iplayer.py
 
-You might have to enable traditional cgi-bin behaviour in your apache/httpd server.
+## Installation - part 2 - setting up the web interface's environment
+
+Access the web interace with your web browser, e.g. http://localhost/cgi-bin/web_get_iplayer.py
 
 The program analyses its environment and will tell you what to do,
 e.g. what directories to create and what permissions to give them.
@@ -40,7 +54,7 @@ user id to check python has all the libraries it needs, like this:
 * $ ./web_get_iplayer.py
 
 
-## Installation - part 2 - the cron queue runner
+## Installation - part 3 - the cron queue runner
 
 Set up cron so as to call the wrapper script.
 
@@ -53,6 +67,10 @@ Set up cron so as to call the wrapper script.
 * get the cron table file with
   wget -O /etc/cron.d/web_get_iplayer https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/_etc_cron.d_web_get_iplayer
 * tweak the /etc/cron.d/web_get_iplayer if your cgi-bin directory is different
+* test it, on Debian/Ubuntu to check there are no errors:
+** sudo -i
+** su - www-data -s /bin/bash
+** /usr/lib/cgi-bin/web_get_iplayer.cron.sh
 
 These together run the download queue. You could change the cron tab to run
 at night if your bandwidth is cheaper then, or change the frequency at which it
