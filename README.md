@@ -17,11 +17,13 @@ a python wrapper to provide a web interface to get_iplayer
 
 * download the get_iplayer program from
   https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
-  and put it into the cgi-bin directory and make executable
+  and put it into the cgi-bin directory and make executable, and install
+  perl and dependencies
 * on Debian or Ubuntu:
   * cd /usr/lib/cgi-bin/
   * sudo wget https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
   * sudo chmod ugo+x get_iplayer
+  * sudo apt-get install libcgi-pm-perl libhtml-html5-entities-perl libhtml-entities-numbered-perl libhtml-html5-parser-perlg
 
 * (optional) get the JW Player if you wish to be able to play FLV
   videos embedded in the web page - see instructions in Playback.
@@ -67,9 +69,9 @@ Set up cron so as to call the wrapper script.
   wget -O /etc/cron.d/web_get_iplayer https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/_etc_cron.d_web_get_iplayer
 * tweak the /etc/cron.d/web_get_iplayer if your cgi-bin directory is different
 * test it, on Debian/Ubuntu to check there are no errors:
-** sudo -i
-** su - www-data -s /bin/bash
-** /usr/lib/cgi-bin/web_get_iplayer.cron.sh
+  * sudo -i
+  * su - www-data -s /bin/bash
+  * /usr/lib/cgi-bin/web_get_iplayer.cron.sh
 
 These together run the download queue. You could change the cron tab to run
 at night if your bandwidth is cheaper then, or change the frequency at which it
@@ -83,8 +85,8 @@ all the queues and logs are kept.
 
 You should be able to play back the downloaded files with mplayer, vlc, ffplay etc.
 
-If you want to use the embedded player, you need the JWplayer. In order to
-get this, you need to register with the www.jwplayer.com website.
+If you want to use the embedded player to play .flv files, you need JWplayer.
+In order to get this, you may need to register at www.jwplayer.com .
 
 Usually, if you've registered correctly, the download page will be 
 https://dashboard.jwplayer.com/#/welcome
@@ -107,12 +109,13 @@ but you can configure its location.
 * sometimes programs don't show up in search but do on
   http://www.bbc.co.uk/iplayer and you have to copy the
   program ID manually into the download function
-* audio/radio search is poor at finding programs; reverse engineering
+* audio/radio search is imperfect at finding programs; reverse engineering
   the http API is not trivial, and is a work in progress
 * all the downloaded audio and video files live in the same directory
+* there's no feature to move files into sub-directories
 
 
-**How it works**
+## How it works
 
 * the program uses the same web/http API as the android app for searching
 * simple json files are used for the queue files
