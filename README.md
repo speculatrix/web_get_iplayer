@@ -11,17 +11,17 @@ a python wrapper to provide a web interface to get_iplayer
 
 * how to enable traditional cgi-bin behaviour in apache/httpd server for
   Debian or Ubuntu:
-** cd /etc/apache2/mods-enabled/
-** sudo ln -s ../mods-available/cgi.load
-** sudo apachectl restart
+  * cd /etc/apache2/mods-enabled/
+  * sudo ln -s ../mods-available/cgi.load
+  * sudo apachectl restart
 
 * download the get_iplayer program from
   https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
   and put it into the cgi-bin directory and make executable
 * on Debian or Ubuntu:
-** cd /usr/lib/cgi-bin/
-** sudo wget https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
-** sudo chmod ugo+x get_iplayer
+  * cd /usr/lib/cgi-bin/
+  * sudo wget https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
+  * sudo chmod ugo+x get_iplayer
 
 * (optional) get the JW Player if you wish to be able to play FLV
   videos embedded in the web page - see instructions in Playback.
@@ -33,9 +33,9 @@ a python wrapper to provide a web interface to get_iplayer
   wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_get_iplayer.py
   and put it into the cgi-bin directory and make executable
 * on Debian or Ubuntu:
-** cd /usr/lib/cgi-bin/
-** sudo wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_get_iplayer.py
-** sudo chmod ugo+x web_get_iplayer.py
+  * cd /usr/lib/cgi-bin/
+  * sudo wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_get_iplayer.py
+  * sudo chmod ugo+x web_get_iplayer.py
 
 
 ## Installation - part 2 - setting up the web interface's environment
