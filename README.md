@@ -49,7 +49,7 @@ e.g. what directories to create and what permissions to give them.
 
 Note that if it doesn't run at all, run it at the command line as the httpd
 user id to check python has all the libraries it needs, like this:
-* $ sudo -i -u ubuntu /usr/lib/cgi-bin/get_iplayer
+* $ sudo -i -u www-data /usr/lib/cgi-bin/get_iplayer
 
 
 ## Installation - part 3 - the cron queue runner
@@ -66,9 +66,7 @@ Set up cron so as to call the wrapper script.
   wget -O /etc/cron.d/web_get_iplayer https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/_etc_cron.d_web_get_iplayer
 * tweak the /etc/cron.d/web_get_iplayer if your cgi-bin directory is different
 * test it, on Debian/Ubuntu to check there are no errors:
-  * sudo -i
-  * su - www-data -s /bin/bash
-  * /usr/lib/cgi-bin/web_get_iplayer.cron.sh
+  * $ sudo -i -u www-data /usr/lib/cgi-bin/web_get_iplayer.cron.sh
 
 These together run the download queue. You could change the cron tab to run
 at night if your bandwidth is cheaper then, or change the frequency at which it
