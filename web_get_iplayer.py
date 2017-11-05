@@ -27,10 +27,12 @@ of the web UI and therefore must be considered dangerous
 """
 
 # pylint:disable=bad-whitespace
-# pylint:disable=line-too-long
-# pylint:disable=superfluous-parens
+# pylint:disable=too-many-branches
 # pylint:disable=too-many-lines
 # pylint:disable=too-many-locals
+# pylint:disable=too-many-too-many-statements
+# pylint:disable=line-too-long
+
 
 import base64
 import cgi
@@ -173,6 +175,7 @@ TRNSCDE_ACT_QUEUE    = 'transcode_active.txt'  # active transcoding
 URL_GITHUB_HASH_SELF       = 'https://api.github.com/repos/speculatrix/web_get_iplayer/contents/web_get_iplayer.py'
 URL_GITHUB_HASH_GETIPLAYER = 'https://api.github.com/repos/get-iplayer/get_iplayer/contents/get_iplayer'
 
+
 # whitespace was used a lot above to make more readable, but it upsets pylint
 # Xpylint:enable=bad-whitespace
 
@@ -207,7 +210,7 @@ def get_github_hash_get_iplayer():
         githubhash = json_data['sha']
 
     except urllib2.HTTPError:
-        print ('get_github_hash_self: Exception urllib2.HTTPError')
+        print 'get_github_hash_self: Exception urllib2.HTTPError'
         githubhash = 'urllib2.HTTPError:'
 
 
@@ -807,11 +810,11 @@ def page_downloaded(p_dir):
         print '    <table>'
         print '      <tr>'
         print '        <th>&nbsp;</th>'
-        if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
+        if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
             print '        <th>JWPlayer5</th>'
-        if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
+        if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
             print '        <th>JWPlayer6</th>'
-        if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
+        if my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1':
             print '        <th>JWPlayer7</th>'
 
         print '        <th>Download</th>\n' \
@@ -827,19 +830,18 @@ def page_downloaded(p_dir):
             file_name, file_extension = os.path.splitext(file_item)
             if file_extension in VIDEO_FILE_SUFFIXES:
                 file_stat = os.stat("%s/%s" % (full_dir, file_item, ))
-                print '    <tr>'
-                print '      <td align="center">',
+                print '    <tr>\n      <td align="center">',
                 file_name_jpg = "%s/%s.jpg" % (full_dir, file_name, )
                 if os.path.isfile(file_name_jpg):
                     print '<img src="%s/%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_name, ),
                 else:
                     print '&nbsp;',
                 print '</td>'
-                if (my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1'):
+                if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
                     print '      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
-                if (my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1'):
+                if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
                     print '      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
-                if (my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1'):
+                if my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1':
                     print '      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                 print '      <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
                 print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
@@ -906,10 +908,10 @@ def page_jwplay5(p_dir, p_file):
                 allowscripaccess="always"
                 id="player1"
                 name="player1"
-                src="'''    + my_settings.get(SETTINGS_SECTION, 'Flv5Uri')      + my_settings.get(SETTINGS_SECTION, 'Flv5UriSWF') + '''"
-                width="'''  + my_settings.get(SETTINGS_SECTION, 'flash_width')  + '''"
-                height="''' + my_settings.get(SETTINGS_SECTION, 'flash_height') + '''"
-        />'''
+                src="%s%s"
+                width="%s"
+                height="%s"
+        />''' % ( my_settings.get(SETTINGS_SECTION, 'Flv5Uri'), my_settings.get(SETTINGS_SECTION, 'Flv5UriSWF'), my_settings.get(SETTINGS_SECTION, 'flash_width'), my_settings.get(SETTINGS_SECTION, 'flash_height'), )
 
 
 #####################################################################################################################
@@ -924,11 +926,10 @@ def page_jwplay6(p_dir, p_file):
     print '''    <div id="myElement">Loading the player...</div>
     <script type="text/javascript">
         jwplayer("myElement").setup({
-            file: "''' + my_settings.get(SETTINGS_SECTION, 'base_url') + '/' + p_dir + '/' + p_file + '''",
+            file: "%s/%s/%s",
             fallback: true
         });
-    </script>
-'''
+    </script>''' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file, )
 
 
 #####################################################################################################################
@@ -957,17 +958,9 @@ def page_popular():
 
     try:
 
-        # from a url
-        #req = urllib2.request(URL_LIST[url_key], headers={ 'user-agent': USAG })
-        #json_data = json.load( urllib2.urlopen(req).read() )
-
         opener = urllib2.build_opener()
         opener.addheaders = [('user-agent', USAG)]
         json_data = json.load(opener.open(URL_LIST[url_key]))
-
-        # from cached copy
-        #json_filehandle = open('popular.json')
-        #json_data = json.load(json_filehandle)
 
         if dbg_level > 1:
             print '<pre>'
@@ -1076,13 +1069,13 @@ def page_queues(p_pid):
     else:
         print 'cron job hasn\'t run and made %s yet</pre>\n<br />\n<br />' % log_dir
 
+
     print '<a name="loglisting">'
     if p_pid != '':
         log_file_name = os.path.join(CONTROL_DIR, "logs", p_pid)
         if os.path.isfile(log_file_name):
-            log_file_handle = open(log_file_name, 'r')
-            log_file_contents = log_file_handle.read()
-            log_file_handle.close()
+            with open(log_file_name, 'r') as log_file_handle:
+                log_file_contents = log_file_handle.read()
             print 'Log for pid: %s\n<br /><ul><pre>%s</pre></ul>' % (p_pid, log_file_contents, )
 
 
@@ -1104,11 +1097,12 @@ def page_search(p_mediatype, p_sought):
 
 
     if p_sought != '':
-        if (p_mediatype == 'video'):
+        if p_mediatype == 'video':
             page_search_video(p_sought)
-        elif (p_mediatype == 'audio'):
+        elif p_mediatype == 'audio':
             print '<b>Work in progress</b><br />'
             page_search_audio(p_sought)
+
 
 #####################################################################################################################
 def page_search_audio(p_sought):
@@ -1153,12 +1147,12 @@ def page_search_audio(p_sought):
                     j_title = j_row['title']
                 #print '    <tr><td colspan="7">%s</td></tr>' % (j_row, )
                 print '    <tr>\n'
-                if (j_type == 'episode'):
+                if j_type == 'episode':
                     b64_title = base64.b64encode(j_title)
                     print '      <td>%s</td>\n' % (pid_to_download_link(j_pid, p_mediatype, b64_title, ''), )
-                elif (j_type == 'brand'):
+                elif j_type == 'brand':
                     print '      <td><a href="?page=search">search brand<a></td>\n'
-                elif (j_type == 'series'):
+                elif j_type == 'series':
                     print '      <td><a href="?page=search">search series</a></td>\n'
                 print '      <td>%s</td>\n' \
                       '      <td>%s</td>\n' \
@@ -1189,7 +1183,7 @@ def page_search_video(p_sought):
         program_data = json_data[1]
 
         if dbg_level > 0:
-            print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing video search with URL %s' % (url_with_query, )
+            print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing %s search with URL %s' % (p_mediatype, url_with_query, )
             if dbg_level > 1:
                 print '<pre>=== full json dump of search result ==='
                 #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
@@ -1343,13 +1337,13 @@ def page_upgrade_check():
     print 'git hash of local get_iplayer %s</p>' % (githash_get_iplayer, )
 
     print '<p>'
-    if (githubhash_self == githash_self):
+    if githubhash_self == githash_self:
         print 'Great, this program is the same as the version on github.\n<br />\n'
     else:
         print 'This program appears to be out of date, please update it.\n<br />\n'
 
 
-    if (githubhash_get_iplayer == githash_get_iplayer):
+    if githubhash_get_iplayer == githash_get_iplayer:
         print 'Great, the get_iplayer program is the same as the version on github.\n<br />\n'
     else:
         print 'The get_iplayer program appears to be out of date, please update it.\n<br />\n'
@@ -1470,7 +1464,7 @@ def print_video_listing_rows(j_rows):
                 if 'text' in prog_item['versions'][0]['duration']:
                     j_duration = prog_item['versions'][0]['duration']['text']
 
-        if (j_type != 'group_large'):
+        if j_type != 'group_large':
             print '    <tr>\n      <td>',
             if j_type == 'episode':
                 print '%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
@@ -1497,8 +1491,7 @@ def print_audio_listing_rows(j_rows):
 
     for j_row in j_rows:
         # audio search result dict has additional nesting
-        #if ('tleo' in j_row and len(j_row['tleo'])):
-        if ('tleo' in j_row and j_row['tleo']):
+        if 'tleo' in j_row and len(j_row['tleo']):
             prog_item = j_row['tleo'][0]
         else:
             prog_item = j_row
@@ -1539,13 +1532,12 @@ def print_audio_listing_rows(j_rows):
                 if 'text' in prog_item['versions'][0]['duration']:
                     j_duration = prog_item['versions'][0]['duration']['text']
 
-        if (j_type != 'group_large'):
+        if j_type != 'group_large':
             print '    <tr>\n      <td>',
             if j_type == 'episode':
                 print '%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
                 print '<a href="?page=recommend&pid=%s&mediatype=%s">recommendations</a>' % (j_pid, p_mediatype, )
             if j_type == 'brand' or j_type == 'series':
-            #if j_type == 'series':
                 print '<a href="?page=episodes&pid=%s&mediatype=%s">more episodes</a>' % (j_pid, p_mediatype, )
             print '&nbsp;</td>'
 
@@ -1589,7 +1581,7 @@ def read_queue(queue, queue_file_name):
             # ignore when file can't be opened
             print 'Error, read_queue couldn\t open file %s for reading' % (queue_file_name, )
 
-    return(queue_count)
+    return queue_count
 
 
 #####################################################################################################################
@@ -1672,13 +1664,13 @@ table td, table th {
 
     global dbg_level
     enable_dev_mode = 0
-    if ('development' in CGI_PARAMS):
+    if 'development' in CGI_PARAMS:
         enable_dev_mode = 1
 
     if 'dbg_level' in CGI_PARAMS:
         dbg_level = int(CGI_PARAMS.getvalue("dbg_level"))
 
-    if (dbg_level > 0):
+    if dbg_level > 0:
         print 'Python errors at <a href="/python_errors" target="_new">/python_errors (new window)</a><br />'
 
 
@@ -1838,7 +1830,7 @@ def write_queue(queue, queue_file_name):
     except OSError:
         print 'Error, write_queue couldn\t open file %s for writing' % (queue_file_name, )
 
-    return(error_flag)
+    return error_flag
 
 
 #####################################################################################################################
