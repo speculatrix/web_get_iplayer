@@ -1,9 +1,8 @@
-FROM debian
+FROM debian:wheezy
 MAINTAINER Christian Ashby <docker@cashby.me.uk>
 # Install OS package prerequisites and configure apache
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y screen apache2 python wget build-essential cron rsyslog && \
+    apt-get install -y screen apache2 python wget build-essential cron rsyslog git && \
     mkdir /var/lock/apache2 && \
     a2enmod cgi && \
     echo "ServerName web_get_iplayer" >> /etc/apache2/sites-enabled/000-default.conf
@@ -17,9 +16,10 @@ RUN chmod +x /usr/local/bin/ts-to-mp4.sh
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libssl-dev libhtml-parser-perl libhttp-cookies-perl libwww-perl libxml-simple-perl libxml-libxml-perl
 # Install the rtmpdump package (TODO: need a -latest.tgz download ideally!)
 WORKDIR /tmp
-RUN wget http://rtmpdump.mplayerhq.hu/download/rtmpdump-2.3.tgz && \
-    tar xvzf rtmpdump-2.3.tgz && \
-    cd rtmpdump-* && make && make install && cd .. && rm -rf rtmpdump*
+RUN git clone git://git.ffmpeg.org/rtmpdump && \
+#wget http://rtmpdump.mplayerhq.hu/download/rtmpdump-2.3.tgz && \
+#    tar xvzf rtmpdump-2.3.tgz && \
+    cd rtmpdump && make && make install && cd .. && rm -rf rtmpdump*
 # Install the get_iplayer script and run it to ensure we have the appropriate cache set up in our ~
 WORKDIR /usr/lib/cgi-bin
 RUN wget https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer && \
