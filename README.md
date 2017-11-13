@@ -103,7 +103,7 @@ docker run -d --mount source={directory},target=/home/iplayer -p 10080:80 {name}
 ```
 Where {name} is the name of the docker image you want to produce and {directory} is the destination for downloads.  The server will be available on http://localhost:10080
 
-Optionally, also mount /var/lib/web_get_iplayer to get access to the iplayer logs from outside the container.
+Optionally, also mount `/var/lib/web_get_iplayer` to get access to the iplayer logs from outside the container.
 
 ## Installation with Docker - from Docker hub
 
@@ -114,7 +114,7 @@ docker run -d --mount source={directory},target=/home/iplayer -p 10080:80 cscash
 ```
 Where {directory} is the destination for downloads.  The server will be available on http://localhost:10080
 
-Optionally, also mount /var/lib/web_get_iplayer to get access to the iplayer logs from outside the container.
+Optionally, also mount `/var/lib/web_get_iplayer` to get access to the iplayer logs from outside the container.
 
 ## Playback
 
