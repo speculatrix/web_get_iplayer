@@ -16,9 +16,9 @@ RUN chmod +x /usr/local/bin/ts-to-mp4.sh
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libssl-dev libhtml-parser-perl libhttp-cookies-perl libwww-perl libxml-simple-perl libxml-libxml-perl
 # Install the rtmpdump package (TODO: need a -latest.tgz download ideally!)
 WORKDIR /tmp
-RUN git clone git://git.ffmpeg.org/rtmpdump && \
 #wget http://rtmpdump.mplayerhq.hu/download/rtmpdump-2.3.tgz && \
 #    tar xvzf rtmpdump-2.3.tgz && \
+RUN git clone git://git.ffmpeg.org/rtmpdump && \
     cd rtmpdump && make && make install && cd .. && rm -rf rtmpdump*
 # Install the get_iplayer script and run it to ensure we have the appropriate cache set up in our ~
 WORKDIR /usr/lib/cgi-bin
@@ -43,6 +43,8 @@ RUN chgrp 33 . && chmod g+ws . && \
     mkdir /var/www/.get_iplayer && chgrp 33 /var/www/.get_iplayer && chmod g+ws /var/www/.get_iplayer && \
     chown 33:33 /var/www && \
     ln -s `which rtmpdump` /usr/lib/cgi-bin/rtmpdump
+# Fix for https://stackoverflow.com/questions/29424132/error-accessing-cgi-script-inside-docker-container-operation-not-permitted-cou
+RUN mkdir -p /var/run/apache2/cgisock
 # Fix cron issue (see http://stackoverflow.com/questions/21926465/issues-running-cron-in-docker-on-different-hosts)
 RUN cat /etc/pam.d/cron | grep -v pam_loginuid.so > /etc/pam.d/cron2 && mv /etc/pam.d/cron2 /etc/pam.d/cron
 # And do some clean-up
