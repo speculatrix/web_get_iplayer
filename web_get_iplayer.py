@@ -10,6 +10,7 @@ This script operates in two modes:
     and then queue them for downloading
  2/ a cron job to process the queues and call get_iplayer to
     download the programs
+ 3/ an RSS feed generator - coming soon!
 
 Released under GPLv3 or later by the author, Paul M, in 2015
 
@@ -38,6 +39,7 @@ import base64
 import cgi
 import cgitb
 import ConfigParser
+import datetime
 import hashlib
 import json
 import os
@@ -70,8 +72,8 @@ dbg_level = 0   # default value no debug
 
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
 # this is hopefully the only thing you ever need to change
-DOCROOT_DEFAULT   = '/var/www/html'
-#DOCROOT_DEFAULT   = '/var/www/public/htdocs'
+#DOCROOT_DEFAULT   = '/var/www/html'
+DOCROOT_DEFAULT   = '/var/www/public/htdocs'
 
 # state files, queues, logs and so on are stored in this directory
 CONTROL_DIR       = '/var/lib/web_get_iplayer'
@@ -90,9 +92,10 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'iplayer_directory'   : '/home/iplayer'                   , # file system location of downloaded files
                       'max_recent_items'    : '5'                               , # maximum recent items
                       'max_trnscd_par'      : '1'                               , # maximum transcoding processes in parallel
-                      'quality_radio'       : 'best,flashaachigh,flashaacstd'   , # flashaachigh, flashaacstd etc
+                      'quality_audio'       : 'best,hlsaachigh,hlsaacstd'       , # flashaachigh, flashaacstd etc
                       'quality_video'       : 'best,hlshd,hlsvhigh,hlsstd'      , # decreasing priority
-                      'transcode_cmd'       : '/usr/local/bin/ts-to-mp4.sh'     , # this command is passed two args input & output
+                      'trnscd_cmd_audio'    : '/usr/local/bin/m4a-to-mp3.sh'    , # this command is passed two args input & output
+                      'trnscd_cmd_video'    : '/usr/local/bin/ts-to-mp4.sh'     , # this command is passed two args input & output
                       'Flv5Enable'          : '1'                               , # whether to show the JWplayer 7 column
                       'Flv5Uri'             : '/jwmediaplayer-5.8'              , # URI where the JW "longtail" JW5 player was unpacked
                       'Flv5UriSWF'          : '/player.swf'                     , # the swf of the JW5 player
@@ -109,8 +112,10 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                     }
 
 # which video files to show from the download folder
-VIDEO_FILE_SUFFIXES = [ '.avi',
+MEDIA_FILE_SUFFIXES = [ '.avi',
                         '.flv',
+                        '.m4a',
+                        '.mp3',
                         '.mp4',
                         '.ts',
                       ]
@@ -280,9 +285,9 @@ def check_load_config_file():
     try:
         qdir_stat = os.stat(CONTROL_DIR)
     except OSError:
-        print 'Error, directory "%s" doesn\'t appear to exist.\n' % (CONTROL_DIR, )
-        print 'Please do the following - needs root:\n'
-        print '\tsudo mkdir "%s" && sudo chgrp %s "%s" && sudo chmod g+ws "%s"\n' % (CONTROL_DIR, str(my_egroup_id), CONTROL_DIR, CONTROL_DIR)
+        print '''Error, directory "%s" doesn\'t appear to exist.
+Please do the following - needs root:
+\tsudo mkdir "%s" && sudo chgrp %s "%s" && sudo chmod g+ws "%s"''' % (CONTROL_DIR, CONTROL_DIR, str(my_egroup_id), CONTROL_DIR, CONTROL_DIR)
         config_bad = -1
         return config_bad       # error so severe, no point in continuing
 
@@ -293,9 +298,9 @@ def check_load_config_file():
         #print 'OK, %s exists and is writable' % CONTROL_DIR
         config_bad = 0
     else:
-        print 'Error, won\'t be able to write to directory "%s".\n' % (CONTROL_DIR, )
-        print 'Please do the following:\n'
-        print '\tsudo chgrp %s "%s" && sudo chmod g+ws "%s"\n' % (str(my_egroup_id), CONTROL_DIR, CONTROL_DIR, )
+        print '''Error, won\'t be able to write to directory "%s".
+Please do the following:
+\tsudo chgrp %s "%s" && sudo chmod g+ws "%s"''' % (CONTROL_DIR, str(my_egroup_id), CONTROL_DIR, CONTROL_DIR, )
         config_bad = -1
         return config_bad       # error so severe, no point in continuing
 
@@ -303,9 +308,9 @@ def check_load_config_file():
     ########
     # verify the settings file exists and is writable
     if not os.path.isfile(config_file_name):
-        print 'Error, can\'t open "%s" for reading.\n' % (config_file_name, )
-        print 'Please do the following - needs root:\n'
-        print '\tsudo touch "%s" && sudo chgrp %s "%s" && sudo chmod g+w "%s"\n' % (config_file_name, str(my_egroup_id), config_file_name, config_file_name)
+        print '''Error, can\'t open "%s" for reading.
+Please do the following - needs root:
+\tsudo touch "%s" && sudo chgrp %s "%s" && sudo chmod g+w "%s"''' % (config_file_name, config_file_name, str(my_egroup_id), config_file_name, config_file_name)
         config_bad = -1
         return config_bad
 
@@ -321,9 +326,9 @@ def check_load_config_file():
          or ( config_stat.st_gid == my_egroup_id and (config_stat.st_mode & stat.S_IWGRP) != 0) ):
         config_bad = 0
     else:
-        print 'Error, won\'t be able to write to file "%s"\n' % (config_file_name, )
-        print 'Please do the following - needs root:\n'
-        print '\tsudo chgrp %s "%s" && sudo chmod g+w %s\n' % (config_file_name, my_egroup_id, config_file_name, )
+        print '''Error, won\'t be able to write to file "%s"
+Please do the following - needs root:
+\tsudo chgrp %s "%s" && sudo chmod g+w %s''' % (config_file_name, config_file_name, my_egroup_id, config_file_name, )
         config_bad = 1
         return config_bad
 
@@ -370,7 +375,9 @@ def check_load_config_file():
     try:
         idir_stat = os.stat(iplayer_directory)
     except OSError:
-        print 'Error, directory %s doesn\'t appear to exist.\nPlease do the following - needs root:\n# sudo mkdir %s && sudo chgrp %d %s && sudo chmod g+ws %s\n' % (iplayer_directory, iplayer_directory, my_egroup_id, iplayer_directory, iplayer_directory, )
+        print '''Error, directory %s doesn\'t appear to exist.
+Please execute the following - needs root:
+# sudo mkdir %s && sudo chgrp %d %s && sudo chmod g+ws %s''' % (iplayer_directory, iplayer_directory, my_egroup_id, iplayer_directory, iplayer_directory, )
         config_bad = 1
         return config_bad
 
@@ -380,7 +387,9 @@ def check_load_config_file():
         config_bad = 0
         #print 'Debug, directory "%s" exists and is writable' % (iplayer_directory, )
     else:
-        print 'Error, won\'t be able to write to %s\nPlease do the following - needs root:\n# sudo chgrp %d %s && sudo chmod g+ws %s\n' % (iplayer_directory, my_egroup_id, iplayer_directory, iplayer_directory, )
+        print '''Error, won\'t be able to write to %s
+Please do the following - needs root:
+# sudo chgrp %d %s && sudo chmod g+ws %s''' % (iplayer_directory, my_egroup_id, iplayer_directory, iplayer_directory, )
         config_bad = 1
         return config_bad
 
@@ -395,7 +404,9 @@ def check_load_config_file():
             #print 'OK, %s exists and is writable' % (s_q_f_name, )
             config_bad = 0
         else:
-            print 'Error, won\'t be able to write to %s\nPlease do the following - needs root:\n# sudo chgrp %d %s && sudo chmod g+w %s\n' % (s_q_f_name, my_egroup_id, CONTROL_DIR, s_q_f_name, )
+            print '''Error, won\'t be able to write to %s
+Please do the following - needs root:
+# sudo chgrp %d %s && sudo chmod g+w %s''' % (s_q_f_name, my_egroup_id, CONTROL_DIR, s_q_f_name, )
             config_bad = 1
             return config_bad
 
@@ -409,25 +420,34 @@ def check_load_config_file():
     # verify that get_iplayer has a directory to write to
     get_iplayer_dir = os.path.join(expanduser("~"), '.get_iplayer', )
     if not os.path.isdir(get_iplayer_dir):
-        print 'Error, directory %s doesn\'t appear to exist.\nPlease do the following - needs root:\n# sudo mkdir %s && sudo chown %d:%d %s && sudo chmod g+ws %s\n' % (get_iplayer_dir, get_iplayer_dir, my_euser_id, my_egroup_id, get_iplayer_dir, get_iplayer_dir, )
+        print '''Error, directory %s doesn\'t appear to exist.
+Please do the following - needs root:
+# sudo mkdir %s && sudo chown %d:%d %s && sudo chmod g+ws %s''' % (get_iplayer_dir, get_iplayer_dir, my_euser_id, my_egroup_id, get_iplayer_dir, get_iplayer_dir, )
         config_bad = 1
 
 
     # check that the get_iplayer program exists
     get_iplayer_binary = my_settings.get(SETTINGS_SECTION, 'get_iplayer')
     if not os.path.isfile(get_iplayer_binary):
-        print 'Error, get_iplayer program not found.\nPlease fix the configuration for get_iplayer below, or download the program and make it executable with the following commands.\n# sudo wget -O %s https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer\n# sudo chmod ugo+x %s' % (get_iplayer_binary, get_iplayer_binary, )
+        print '''Error, get_iplayer program not found.
+Please fix the configuration for get_iplayer below, or download the program and make it executable with the following commands.
+# sudo wget -O %s https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
+# sudo chmod ugo+x %s''' % (get_iplayer_binary, get_iplayer_binary, )
         config_bad = 1
     # check that the get_iplayer program is executable
     if os.path.isfile(get_iplayer_binary) and not os.access(get_iplayer_binary, os.X_OK):
-        print 'Error, get_iplayer program is not executable.\nMake it executable with the following command:\n# sudo chmod ugo+x %s' % (get_iplayer_binary, )
+        print '''Error, get_iplayer program is not executable.
+Make it executable with the following command:
+# sudo chmod ugo+x %s''' % (get_iplayer_binary, )
         config_bad = 1
 
 
     # need swffile for the rtmpdump program to work
     swffile = expanduser("~") + '/' + '.swfinfo'
     if os.path.isfile(get_iplayer_binary) and not os.path.isfile(swffile):
-        print 'Error, file %s doesn\'t appear to exist.\nPlease do the following - needs root:\n# sudo touch %s && sudo chgrp %d %s && sudo chmod g+w %s\n' % (swffile, swffile, my_egroup_id, swffile, swffile, )
+        print '''Error, file %s doesn\'t appear to exist.
+Please do the following - needs root:
+# sudo touch %s && sudo chgrp %d %s && sudo chmod g+w %s''' % (swffile, swffile, my_egroup_id, swffile, swffile, )
         config_bad = 1
 
 
@@ -566,6 +586,9 @@ def cron_run_queue():
 
         print 'background task = %s' % (cmd, )
         os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+
+        # FIXME! set the directory to a subdirectory matching
+        # the first letter of the program.
 
         if dbg_level > 0:
             print 'Cron job is about to run %s' % cmd
@@ -736,7 +759,7 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle):
         print_select_resolution()
         print '</td></tr>'
         print '    <tr><td>Video Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_video'), )
-        print '    <tr><td>Radio Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_radio'), )
+        print '    <tr><td>Radio Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_audio'), )
         #print '    <tr><td colspan="2"><input type="submit" name="submit" value="download" /></td></tr>'
         print '    <tr><td colspan="2"><input type="submit" name="submit" value="enqueue" /></td></tr>'
         print '  </table>'
@@ -754,7 +777,7 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle):
         # set type & quality - by default use video mode
         p_quality = my_settings.get(SETTINGS_SECTION, 'quality_video')
         if p_mediatype == 'audio':
-            p_quality = my_settings.get(SETTINGS_SECTION, 'quality_radio')
+            p_quality = my_settings.get(SETTINGS_SECTION, 'quality_audio')
 
         # create a submission queue item as a dict, so it can be merged with the existing one
         new_sub_q_item = {  'pid'               : p_pid,
@@ -828,7 +851,7 @@ def page_downloaded(p_dir):
         file_list = os.listdir(full_dir)
         for file_item in sorted(file_list):
             file_name, file_extension = os.path.splitext(file_item)
-            if file_extension in VIDEO_FILE_SUFFIXES:
+            if file_extension in MEDIA_FILE_SUFFIXES:
                 file_stat = os.stat("%s/%s" % (full_dir, file_item, ))
                 print '    <tr>\n      <td align="center">',
                 file_name_jpg = "%s/%s.jpg" % (full_dir, file_name, )
@@ -838,11 +861,21 @@ def page_downloaded(p_dir):
                     print '&nbsp;',
                 print '</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
-                    print '      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                    if file_extension == 'flv':
+                        print '      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                    else:
+                        print '      <td>&nbsp;</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
-                    print '      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                    if file_extension == 'flv':
+                        print '      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                    else:
+                        print '      <td>&nbsp;</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1':
-                    print '      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                    if file_extension == 'flv':
+                        print '      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                    else:
+                        print '      <td>&nbsp;</td>'
+
                 print '      <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
                 print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
                 print '      <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
@@ -891,8 +924,8 @@ def page_illegal_param(illegal_param_count):
     """parameter being passed has invalid format, possibly indicating hack
     attack"""
 
-    print '<h1>Illegal Parameter</h1>'
-    print '%d illegal parameters found' % (illegal_param_count, )
+    print '''<h1>Illegal Parameter</h1>
+%d illegal parameters found''' % (illegal_param_count, )
 
 
 #####################################################################################################################
@@ -1285,17 +1318,29 @@ def page_settings():
 
 
 #####################################################################################################################
-def page_transcode(p_submit, p_transcode_inodes):
+def page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method):
     """scan the downloaded list of files and transcode any whose inode matches
     one in the list"""
 
     print 'trancoding files with inodes matching %s\n<br />' % ','.join(p_transcode_inodes)
 
-    if p_submit == '' or p_submit != "Transcode":
+    if p_trnscd_cmd_method == '':
+        print '<p>Error, transcode method wasn\'t provided</p>\n'
+
+    # check that user provided known transcode method
+    if p_trnscd_cmd_method != '' and (p_trnscd_cmd_method not in SETTINGS_DEFAULTS.keys()):
+        print '<p>Error, %s is not a recognised transcode method</p>\n' % (p_transcode_inodes, )
+        p_trnscd_cmd_method == ''
+
+    if p_submit == '' or p_submit != 'Transcode' or p_trnscd_cmd_method == '':
         print '<p>Confirm transcode options:</p>'
         print '<form method="get" action="">'
-        print '<input type="text" name="transcode_options" value="%s" size="50"><br />' % my_settings.get(SETTINGS_SECTION, 'transcode_cmd')
+        print '<select name="trnscd_cmd_method">\n'
+        print '    <option value="trnscd_cmd_video">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_video'), )
+        print '    <option value="trnscd_cmd_audio">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_audio'), )
+        print '</select>\n<br />'
         print '<input type="submit" name="submit" value="Transcode">'
+
         for inode_num in p_transcode_inodes:
             print '<input type="hidden" name="transcode_inodes" value="%s">' % (inode_num, )
         print '<input type="hidden" name="page" value="transcode">'
@@ -1309,7 +1354,7 @@ def page_transcode(p_submit, p_transcode_inodes):
             #print 'considering file %s which has inode %d\n<br >' % (full_file_name, file_stat[stat.ST_INO], )
             if str(file_stat[stat.ST_INO]) in p_transcode_inodes:
                 full_file_mp4 = '%s.mp4' % ( os.path.splitext(full_file_name)[0], )
-                cmd = '%s %s %s 2>&1' % (my_settings.get(SETTINGS_SECTION, 'transcode_cmd'), full_file_name, full_file_mp4, )
+                cmd = '%s %s 2>&1' % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), full_file_name, )
                 #print 'file %s is being transcoded with command %s\n<br ><pre>\n' % (full_file_name, cmd, )
                 print 'file transcoding<pre>\n%s\n' % (cmd, )
                 sys.stdout.flush()
@@ -1755,6 +1800,10 @@ table td, table th {
         if 'submit' in CGI_PARAMS:
             p_submit = CGI_PARAMS.getvalue('submit')
 
+        p_trnscd_cmd_method = ''
+        if 'trnscd_cmd_method' in CGI_PARAMS:
+            p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
+
 
         ########
         # call the specific page
@@ -1766,7 +1815,7 @@ table td, table th {
             p_page = CGI_PARAMS.getvalue('page')
 
             if p_page == 'transcode' or (p_page == 'downloaded' and p_transcode_inodes):
-                page_transcode(p_submit, p_transcode_inodes)
+                page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method)
 
             if p_page == 'downloaded' and not p_transcode_inodes:
                 page_downloaded(p_dir)
