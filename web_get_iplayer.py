@@ -583,7 +583,7 @@ def cron_run_download():
             os.mkdir(log_dir)
             #os.lchmod(log_dir, 0775)
 
-        output_file = os.path.join(log_dir, first_item['pid'],)
+        log_file = os.path.join(log_dir, first_item['pid'],)
 
         # assemble the command to call get_iplayer
         cmd = my_settings.get(SETTINGS_SECTION, 'get_iplayer') + ' ' + my_settings.get(SETTINGS_SECTION, 'download_args')
@@ -605,7 +605,7 @@ def cron_run_download():
         cmd = cmd + ' --pid ' + first_item['pid']
 
         # redirect output
-        cmd = cmd + ' > ' + output_file + ' 2>&1'
+        cmd = cmd + ' >> ' + log_file + ' 2>&1'
 
         if dbg_level > 0:
             print 'calling shell to do %s' % (cmd, )
@@ -614,7 +614,7 @@ def cron_run_download():
         # FIXME! set the directory to a subdirectory matching
         # FIXME! the first letter of the program.
 
-        #subprocess.check_call(cmd, stdout=output_file, stderror=output_file)
+        #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
         os.system(cmd)
 
 
@@ -629,8 +629,9 @@ def cron_run_download():
         else:
             print 'Success, written empty active file'
 
-        # append the most recent download to recent and shorten that if needed
+        # append the most recent download to recent
         recent_queue.append(first_item)
+        # shorten recent queue to max allowed in settings
         while len(recent_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
             print 'removing oldest item from recent items queue'
             recent_queue.pop(0)
@@ -716,10 +717,9 @@ def cron_run_transcode():
         if write_queue(trnscd_act_queue, t_a_f_name) == -1:
             print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
 
-
-        # FIXME! need to discover the downloaded file!
-        orig_file = 'Weatherworld_-_6._Forecasts_p03cgmx8_original.raw.m4a'
-        orig_file = 'Weather_for_the_Week_Ahead_-_2017-12-20_b09jg1lj_original.ts'
+        # break the file up into parts, create a new file name according to
+        # how we transcode it, and generate a command to transcode
+        orig_file = find_filename_by_pid(first_item['pid'])
         file_root, file_extension = os.path.splitext(orig_file)
         file_root = file_root.replace('original', 'transcoded')
         file_root = file_root.replace('default', 'transcoded')
@@ -732,7 +732,18 @@ def cron_run_transcode():
                 fnameadd = '-%s' % (first_item['trnscd_rez'], )
         #cmd = "%s %s %s %s%s%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_root, fnameadd, '.mp3', )
         cmd = "%s %s %s %s%s%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_root, fnameadd, '.mp4', )
-       
+
+        log_dir = os.path.join(CONTROL_DIR, 'logs')
+        if not os.path.isdir(log_dir):
+            print 'Info, CONTROL_DIR %s, need to make directory %s' % (CONTROL_DIR, log_dir, )
+            os.mkdir(log_dir)
+            #os.lchmod(log_dir, 0775)
+        log_file = os.path.join(log_dir, first_item['pid'],)
+
+        # redirect output
+        cmd = cmd + ' >> ' + log_file + ' 2>&1'
+
+
         #if dbg_level > 0:
         print 'calling shell to do %s' % (cmd, )
         os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
@@ -740,7 +751,7 @@ def cron_run_transcode():
         # FIXME! set the directory to a subdirectory matching
         # FIXME! the first letter of the program.
 
-        #subprocess.check_call(cmd, stdout=output_file, stderror=output_file)
+        #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
         os.system(cmd)
 
         trnscd_act_queue = []
@@ -749,6 +760,10 @@ def cron_run_transcode():
 
         first_item['TT_finished'] = time.time()
         trnscd_rec_queue.append(first_item)
+        # shorten recent queue to max allowed in settings
+        while len(trnscd_rec_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
+            print 'removing oldest item from transcode recent items queue'
+            trnscd_rec_queue.pop(0)
         if write_queue(trnscd_rec_queue, t_r_f_name) == -1:
             print 'Error, failed writing transcode recents list to file %s' % (t_r_f_name, )
 
@@ -784,6 +799,22 @@ def delete_files_by_inode(inode_list, del_img_flag):
                             print 'error deleting %s\n<br />' % (image_file_name, )
                     else:
                         print 'there was no image file %s to be deleted\n<br >' % (image_file_name, )
+
+
+#####################################################################################################################
+def find_filename_by_pid(p_pid):
+    """we don't know the exact file name when we downloaded something
+    FIXME! doesn't look in subdirectories.
+    """
+
+    wanted_file = ''
+
+    file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+    for file_name in sorted(file_list):
+        if p_pid in file_name and ('original' in file_name or 'default' in file_name):
+            wanted_file = file_name
+
+    return wanted_file
 
 
 #####################################################################################################################
