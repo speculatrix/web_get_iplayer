@@ -77,7 +77,7 @@ wget https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/web_ge
 chmod ugo+x web_get_iplayer.cron.sh
 ```
 * get the cron table file with
-```  
+```
 wget -O /etc/cron.d/web_get_iplayer https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/_etc_cron.d_web_get_iplayer
 ```
 * tweak the `/etc/cron.d/web_get_iplayer` if your `cgi-bin` directory is different
@@ -109,7 +109,7 @@ Optionally, also mount `/var/lib/web_get_iplayer` to get access to the iplayer l
 
 For convenience, there is also a version of the script [on Docker Hub](https://hub.docker.com/r/cscashby/web_get_iplayer/):
 ```
-docker pull cscashby/web_get_iplayer 
+docker pull cscashby/web_get_iplayer
 docker run -d --mount source={directory},target=/home/iplayer -p 10080:80 cscashby/web_get_iplayer
 ```
 Where {directory} is the destination for downloads.  The server will be available on http://localhost:10080
@@ -123,21 +123,22 @@ You should be able to play back the downloaded files with mplayer, vlc, ffplay e
 If you want to use the embedded player to play .flv files, you need JWplayer.
 In order to get this, you may need to register at www.jwplayer.com .
 
-Usually, if you've registered correctly, the download page will be 
+Usually, if you've registered correctly, the download page will be
 https://dashboard.jwplayer.com/#/welcome
 
 Download the jwplayer-*version*.zip file, make a note of the licence key.
 Latest at: https://ssl.p.jwpcdn.com/player/download/jwplayer-7.12.8.zip
-Unpack the zip file into your htdocs directory, so it appears as 
+Unpack the zip file into your htdocs directory, so it appears as
 http://example/jw-player-*version*/ and ensure the appropriate relative URI
 is put into the configuration (Flv7Uri) along with the licence key string.
 
 
-You can transcode the FLV and TS files into other formats to play on other
-devices; mp4 is a popular choice. The UI offers this possibility, whereby
-it calls a transcode command. A useful script for this is flv-to-divx.sh,
-download it and make it executable. A good place to put it is /usr/local/bin,
-but you can configure its location.
+You can transcode the TS (video) and M4A (audio) files into other formats
+to play on other devices; mp4 is a popular choice for video, mp3 for audio.
+The UI offers this possibility, whereby it calls a transcode command.
+Some useful scripts are provided for doing this, ts-to-mp4.sh and m4a-to-mp3.sh
+download them and make them executable. A good place to put them is /usr/local/bin,
+but you can configure their locations in the settings.
 
 ## Known problems and shortcomings
 
