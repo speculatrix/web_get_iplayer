@@ -112,6 +112,10 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'Flv7Key'             : ''                                , # JW Player 7 Key, leave blank if you don't have one
                     }
 
+TRANSCODE_COMMANDS = { 'trnscd_cmd_audio': { 'inext': 'm4a', 'outext': 'mp3', },
+                       'trnscd_cmd_video': { 'inext': 'ts',  'outext': 'mp4', },
+                     }
+
 # which video files to show from the download folder
 MEDIA_FILE_SUFFIXES = [ '.avi',
                         '.flv',
@@ -723,6 +727,7 @@ def cron_run_transcode():
         file_root, file_extension = os.path.splitext(orig_file)
         file_root = file_root.replace('original', 'transcoded')
         file_root = file_root.replace('default', 'transcoded')
+        file_root = file_root.replace('editorial', 'transcoded')
         cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
         rezopts = ''
         fnameadd = ''
@@ -730,8 +735,7 @@ def cron_run_transcode():
             if first_item['trnscd_rez'] == '' or first_item['trnscd_rez'] != 'original':
                 rezopts = ' -s %s' % (first_item['trnscd_rez'], )
                 fnameadd = '-%s' % (first_item['trnscd_rez'], )
-        #cmd = "%s %s %s %s%s%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_root, fnameadd, '.mp3', )
-        cmd = "%s %s %s %s%s%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_root, fnameadd, '.mp4', )
+        cmd = "%s %s %s %s%s.%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_root, fnameadd, TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'], )
 
         log_dir = os.path.join(CONTROL_DIR, 'logs')
         if not os.path.isdir(log_dir):
@@ -1047,7 +1051,8 @@ def page_downloaded(p_dir):
                         print '      <td>&nbsp;</td>'
 
                 print '      <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
-                print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
+                #print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
+                print '      <td><a href="?page=transcode_inode&inode=%d"><img src="/icons/transfer.png" /></td>' % (file_stat[stat.ST_INO], )
                 print '      <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
                 print '      <td>%d</td>' % (file_stat.st_size / 1024)
                 print '      <td>%s</td>' % time.ctime(file_stat.st_mtime)
@@ -1549,11 +1554,17 @@ def page_settings():
 
 
 #####################################################################################################################
-def page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method):
+def page_transcode_pid(p_submit, p_pid, p_mediatype, p_trnscd_cmd_method):
+
+    print "<p>Can't do this</p>"
+
+
+#####################################################################################################################
+def page_transcode_inode(p_submit, p_inode, p_trnscd_cmd_method, p_trnscd_rez):
     """scan the downloaded list of files and transcode any whose inode matches
     one in the list"""
 
-    print 'trancoding files with inodes matching %s\n<br />' % ','.join(p_transcode_inodes)
+    print 'transcoding files with inode %s\n<br />' % (p_inode, )
 
     if p_submit == '' or p_submit != 'Transcode' or p_trnscd_cmd_method == '':
         print '<p>Confirm transcode options:</p>'
@@ -1562,22 +1573,32 @@ def page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method):
         print '    <option value="trnscd_cmd_video">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_video'), )
         print '    <option value="trnscd_cmd_audio">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_audio'), )
         print '</select>\n<br />'
-        print '<input type="submit" name="submit" value="Transcode">'
+        print_select_resolution()
+        print '<br />'
 
-        for inode_num in p_transcode_inodes:
-            print '<input type="hidden" name="transcode_inodes" value="%s">' % (inode_num, )
-        print '<input type="hidden" name="page" value="transcode">'
+        print '<input type="hidden" name="inode" value="%s">' % (p_inode, )
+        print '<input type="hidden" name="page" value="transcode_inode">'
+        print '<input type="submit" name="submit" value="Transcode">'
         print '</form>'
     else:
         file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
-
         for file_name in sorted(file_list):
             full_file_name = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
+            file_root, file_extension = os.path.splitext(full_file_name)
+            file_root = file_root.replace('original', 'transcoded')
+            file_root = file_root.replace('default', 'transcoded')
+            file_root = file_root.replace('editorial', 'transcoded')
             file_stat = os.stat(full_file_name)
             #print 'considering file %s which has inode %d\n<br >' % (full_file_name, file_stat[stat.ST_INO], )
-            if str(file_stat[stat.ST_INO]) in p_transcode_inodes:
+            if str(file_stat[stat.ST_INO]) == p_inode:
+                rezopts = ''
+                fnameadd = ''
+                if p_trnscd_rez != '' and p_trnscd_rez != 'original':
+                    rezopts = ' -s %s' % (p_trnscd_rez, )
+                    fnameadd = '-%s' % (p_trnscd_rez, )
+ 
                 #full_file_mp4 = '%s.mp4' % ( os.path.splitext(full_file_name)[0], )
-                cmd = '%s %s 2>&1' % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), full_file_name, )
+                cmd = "%s %s %s %s%s.%s 2>&1" % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), rezopts, full_file_name, file_root, fnameadd, TRANSCODE_COMMANDS[p_trnscd_cmd_method]['outext'], )
                 #print 'file %s is being transcoded with command %s\n<br ><pre>\n' % (full_file_name, cmd, )
                 print 'file transcoding<pre>\n%s\n' % (cmd, )
                 sys.stdout.flush()
@@ -1585,6 +1606,10 @@ def page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method):
                 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0) # and stderr
                 os.system(cmd)
                 print '</pre>'
+                print '<p>Finished!</p>'
+
+
+
 
 
 #####################################################################################################################
@@ -1632,8 +1657,8 @@ def print_queue_as_html_table(q_data, queue_fields):
 
     #print '=== %s ===<br />', (str(q_data), )
 
-    #if len(q_data) > 0:
-    if q_data:
+    #if q_data:
+    if len(q_data) > 0:
         i = 0
         print '<table>'
         print '\t<tr>'
@@ -1656,6 +1681,7 @@ def print_queue_as_html_table(q_data, queue_fields):
                     print '\t\t<td align="center">%s<br />' % (elem, )
                     if elem != '':
                         print '<a href="?page=queues&pid=%s">show log</a><br />\n' % (elem, )
+                        print '<a href="?page=transcode_pid&pid=%s&mediatype=%s&trnscd_cmd_method=%s">transcode</a><br />\n' % (elem, q_data[i]['mediatype'], q_data[i]['trnscd_cmd_method'], )
                         print '<a href="?page=download&pid=%s&mediatype=%s&title=%s&subtitle=%s">redownload</a><br />\n' % (elem, q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'],)
                     else:
                         print '&nbsp;'
@@ -1998,6 +2024,10 @@ table td, table th {
         if 'force_redownload' in CGI_PARAMS:
             p_force = 'y'
 
+        p_inode = ''
+        if 'inode' in CGI_PARAMS:
+            p_inode = CGI_PARAMS.getvalue('inode')
+
         p_pid = ''
         if 'pid' in CGI_PARAMS:
             p_pid = CGI_PARAMS.getvalue('pid')
@@ -2030,7 +2060,7 @@ table td, table th {
             p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
             # check that user provided known transcode method
             if p_trnscd_cmd_method != '' and (p_trnscd_cmd_method not in TRANSCODE_METHODS):
-                print '<p>Error, %s is not a recognised transcode method</p>\n' % (p_transcode_inodes, )
+                print '<p>Error, %s is not a recognised transcode method</p>\n' % (p_trnscd_cmd_method, )
                 p_trnscd_cmd_method == ''
 
         p_trnscd_rez = ''
@@ -2089,11 +2119,14 @@ table td, table th {
             if p_page == 'settings':
                 page_settings()
 
-            if p_page == 'transcode':
+            if p_page == 'transcode_pid':
                 if p_trnscd_cmd_method == '':
                     print '<p>Error, transcode method wasn\'t provided</p>\n'
                 else:
-                    page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method)
+                    page_transcode_pid(p_submit, p_pid, p_mediatype, p_trnscd_cmd_method)
+
+            if p_page == 'transcode_inode':
+                page_transcode_inode(p_submit, p_inode, p_trnscd_cmd_method, p_trnscd_rez)
 
             if p_page == 'upgrade_check':
                 page_upgrade_check()
