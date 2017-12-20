@@ -31,7 +31,7 @@ of the web UI and therefore must be considered dangerous
 # pylint:disable=too-many-branches
 # pylint:disable=too-many-lines
 # pylint:disable=too-many-locals
-# pylint:disable=too-many-too-many-statements
+# pylint:disable=too-many-statements
 # pylint:disable=line-too-long
 
 
@@ -39,7 +39,7 @@ import base64
 import cgi
 import cgitb
 import ConfigParser
-import datetime
+#import datetime
 import hashlib
 import json
 import os
@@ -166,7 +166,11 @@ INPUT_FORM_ESCAPE_TABLE = {
 }
 
 
-QUEUE_FIELDS    = [ 'pid', 'title', 'subtitle', 'TT_submitted', 'TT_started', 'TT_finished', 'mediatype', 'quality', 'transrez', 'force' ]
+QUEUE_FIELDS    = [ 'pid', 'title', 'subtitle',
+                    'mediatype', 'quality', 'force',
+                    'trnscd_cmd_method', 'trnscd_rez',
+                    'TT_submitted', 'TT_started', 'TT_finished',
+                  ]
 
 SUBMIT_QUEUE    = 'submit.txt'  # where the web page submits/enqueues
 PENDING_QUEUE   = 'pending.txt' # cron job takes submit and appends to pending
@@ -519,6 +523,19 @@ def cron_run_queue():
         print 'Info, recent items list hasn\'t been created'
 
 
+    # transcode submissions
+    trnscd_sub_queue = []
+    tsi = 0         # count transcode submissions, -1 if queue couldn't be read
+    t_s_f_name = os.path.join(CONTROL_DIR, TRNSCDE_SUB_QUEUE)
+    if os.path.isfile(t_s_f_name):
+        tsi = read_queue(trnscd_sub_queue, t_s_f_name)
+        if tsi == -1:
+            print 'Info, cron job, couldn\'t read trancode submission file'
+    else:
+        print 'Info, transcode submission queue hasn\'t been created'
+
+
+    ## now start processing the queues ##
     first_item = []
     if len(pend_queue) > 0:
     #if pend_queue:
@@ -560,12 +577,12 @@ def cron_run_queue():
         if first_item['force'] == 'y':
             cmd = cmd + ' --force'
 
-        if 'transrez' in first_item and first_item['transrez'] != '':
+        if 'trnscd_rez' in first_item and first_item['trnscd_rez'] != '':
             rezopts = ''
             fnameadd = ''
-            if first_item['transrez'] != 'original':
-                rezopts = ' -s %s' % (first_item['transrez'], )
-                fnameadd = '-%s' % (first_item['transrez'], )
+            if first_item['trnscd_rez'] != 'original':
+                rezopts = ' -s %s' % (first_item['trnscd_rez'], )
+                fnameadd = '-%s' % (first_item['trnscd_rez'], )
             cmd = cmd + ' --command "' + my_settings.get(SETTINGS_SECTION, 'transcode_cmd') + rezopts + ' <filename> <fileprefix>' + fnameadd + '.avi"'
 
 
@@ -588,7 +605,7 @@ def cron_run_queue():
         os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
         # FIXME! set the directory to a subdirectory matching
-        # the first letter of the program.
+        # FIXME! the first letter of the program.
 
         if dbg_level > 0:
             print 'Cron job is about to run %s' % cmd
@@ -606,6 +623,18 @@ def cron_run_queue():
             print 'Error, failed to write empty active file'
         else:
             print 'Success, written empty active file'
+
+        # if transcode was requested, append to queue
+        # FIXME!
+        #if 'trnscd_rez' in first_item and first_item['trnscd_rez'] != '':
+        if 'trnscd_cmd_method' in first_item and first_item['trnscd_cmd_method'] != '':
+            trnscd_item['trnscd_cmd_method'] = first_item['trnscd_cmd_method']
+            trnscd_item['trnscd_rez'] = first_item['trnscd_rez']
+            trnscd_sub_queue.append(trnscd_item)
+            if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
+                print 'Error, failed to write transcode submission queue'
+            else:
+                print 'Success, written transcode submission queue'
 
         # append the most recent download to recent and shorten that if needed
         recent_queue.append(first_item)
@@ -723,7 +752,7 @@ def page_development(p_dev):
 
 
 #####################################################################################################################
-def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle):
+def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force):
     """ this page presents the download function"""
 
     if p_pid == '' or p_submit == '':
@@ -766,13 +795,15 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle):
         print '  </form>'
 
     else:
-        p_force = 'n'
-        if 'force_redownload' in CGI_PARAMS:
-            p_force = 'y'
+        # FIXME! these should be in the main part, in params analysis
+        p_trnscd_rez = ''
+        if 'trnscd_rez' in CGI_PARAMS:
+            p_trnscd_rez = CGI_PARAMS.getvalue('trnscd_rez')
 
-        p_transrez = ''
-        if 'transrez' in CGI_PARAMS:
-            p_transrez = CGI_PARAMS.getvalue('transrez')
+        p_trnscd_cmd_method = ''
+        if 'trnscd_cmd_method' in CGI_PARAMS:
+            p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
+
 
         # set type & quality - by default use video mode
         p_quality = my_settings.get(SETTINGS_SECTION, 'quality_video')
@@ -788,7 +819,8 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle):
                             'TT_finished'       : '',
                             'mediatype'         : p_mediatype,
                             'quality'           : p_quality,
-                            'transrez'          : p_transrez,
+                            'trnscd_cmd_method' : p_trnscd_cmd_method,
+                            'trnscd_rez'        : p_trnscd_rez,
                             'force'             : p_force,
                          }
 
@@ -861,17 +893,17 @@ def page_downloaded(p_dir):
                     print '&nbsp;',
                 print '</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
-                    if file_extension == 'flv':
+                    if file_extension == '.flv':
                         print '      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
-                    if file_extension == 'flv':
+                    if file_extension == '.flv':
                         print '      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1':
-                    if file_extension == 'flv':
+                    if file_extension == '.flv':
                         print '      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
@@ -934,7 +966,7 @@ def page_jwplay5(p_dir, p_file):
 
     print '''
         <script type="text/javascript" src="/jwmediaplayer-5.8/swfobject.js"></script>
-        <embed flashvars="file=''' + my_settings.get(SETTINGS_SECTION, 'base_url') + '/' + p_dir + '/' + p_file + '''&autostart=true"
+        <embed flashvars="file=%s/%s/%s&autostart=true"
                 autostart="false"
                 stretching="fill"
                 allowfullscreen="true"
@@ -944,7 +976,14 @@ def page_jwplay5(p_dir, p_file):
                 src="%s%s"
                 width="%s"
                 height="%s"
-        />''' % ( my_settings.get(SETTINGS_SECTION, 'Flv5Uri'), my_settings.get(SETTINGS_SECTION, 'Flv5UriSWF'), my_settings.get(SETTINGS_SECTION, 'flash_width'), my_settings.get(SETTINGS_SECTION, 'flash_height'), )
+        />
+''' % ( my_settings.get(SETTINGS_SECTION, 'base_url'),
+        p_dir,
+        p_file,
+        my_settings.get(SETTINGS_SECTION, 'Flv5Uri'),
+        my_settings.get(SETTINGS_SECTION, 'Flv5UriSWF'),
+        my_settings.get(SETTINGS_SECTION, 'flash_width'),
+        my_settings.get(SETTINGS_SECTION, 'flash_height'), )
 
 
 #####################################################################################################################
@@ -962,7 +1001,8 @@ def page_jwplay6(p_dir, p_file):
             file: "%s/%s/%s",
             fallback: true
         });
-    </script>''' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file, )
+    </script>
+''' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file, )
 
 
 #####################################################################################################################
@@ -977,11 +1017,11 @@ def page_jwplay7(p_dir, p_file):
     print '''    <div id="myelement">loading the player...</div>
     <script type="text/javascript">
         jwplayer("myelement").setup({
-            file: "''' + my_settings.get(SETTINGS_SECTION, 'base_url') + '/' + p_dir + '/' + p_file + '''",
+            file: "%s/%s/%s",
             fallback: true
         });
     </script>
-'''
+''' % ( my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file)
 
 
 #####################################################################################################################
@@ -1018,7 +1058,7 @@ def page_queues(p_pid):
 
     print '<h3>current state of queues and logs</h3>'
 
-    # active queue
+    ## active queue ##
     print 'active queue:<ol>'
     quefile = os.path.join(CONTROL_DIR, ACTIVE_QUEUE)
     queue = []
@@ -1036,7 +1076,7 @@ def page_queues(p_pid):
     print '</ol><br />'
 
 
-    # submission queue
+    ## submission queue ##
     print 'submission queue:<ol>'
     quefile = os.path.join(CONTROL_DIR, SUBMIT_QUEUE)
     queue = []
@@ -1054,7 +1094,7 @@ def page_queues(p_pid):
     print '</ol>\n<br />'
 
 
-    # pending queue
+    ## pending queue ##
     print 'pending queue:<ol>'
     quefile = os.path.join(CONTROL_DIR, PENDING_QUEUE)
     queue = []
@@ -1071,7 +1111,7 @@ def page_queues(p_pid):
         print 'hasn\'t been created'
     print '</ol><br />'
 
-    # recently completed
+    ## recently completed ##
     print 'recent items:<ol>'
     quefile = os.path.join(CONTROL_DIR, RECENT_ITEMS)
     queue = []
@@ -1088,6 +1128,42 @@ def page_queues(p_pid):
         print 'hasn\'t been created'
     print '</ol><br />'
 
+
+    ## transcode queues ##
+    print 'trancode queue active:<ol>'
+    quefile = os.path.join(CONTROL_DIR, TRNSCDE_ACT_QUEUE)
+    queue = []
+    if os.path.isfile(quefile):
+        queue_count = read_queue(queue, quefile)
+        if queue_count == -1:
+            print '<b>error</b>, failed reading file'
+        elif len(queue) == 0:
+        #elif queue:
+            print 'empty'
+        else:
+            print_queue_as_html_table(queue)
+    else:
+        print 'hasn\'t been created'
+    print '</ol><br />'
+
+    print 'trancode queue submitted:<ol>'
+    quefile = os.path.join(CONTROL_DIR, TRNSCDE_SUB_QUEUE)
+    queue = []
+    if os.path.isfile(quefile):
+        queue_count = read_queue(queue, quefile)
+        if queue_count == -1:
+            print '<b>error</b>, failed reading file'
+        elif len(queue) == 0:
+        #elif queue:
+            print 'empty'
+        else:
+            print_queue_as_html_table(queue)
+    else:
+        print 'hasn\'t been created'
+    print '</ol><br />'
+
+
+    #### logging information
     # basic information
     #file_list = os.listdir(CONTROL_DIR)
     #print '<pre>files in %s are:\n\t%s</pre>\n<br />\n<br />' % (CONTROL_DIR, str(file_list), )
@@ -1353,7 +1429,7 @@ def page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method):
             file_stat = os.stat(full_file_name)
             #print 'considering file %s which has inode %d\n<br >' % (full_file_name, file_stat[stat.ST_INO], )
             if str(file_stat[stat.ST_INO]) in p_transcode_inodes:
-                full_file_mp4 = '%s.mp4' % ( os.path.splitext(full_file_name)[0], )
+                #full_file_mp4 = '%s.mp4' % ( os.path.splitext(full_file_name)[0], )
                 cmd = '%s %s 2>&1' % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), full_file_name, )
                 #print 'file %s is being transcoded with command %s\n<br ><pre>\n' % (full_file_name, cmd, )
                 print 'file transcoding<pre>\n%s\n' % (cmd, )
@@ -1772,6 +1848,9 @@ table td, table th {
                 print 'p_file is illegal\n'
                 illegal_param_count += 1
 
+        p_force = 'n'
+        if 'force_redownload' in CGI_PARAMS:
+            p_force = 'y'
 
         p_pid = ''
         if 'pid' in CGI_PARAMS:
@@ -1827,7 +1906,7 @@ table td, table th {
                 p_subtitle = ''
                 if 'subtitle' in CGI_PARAMS:
                     p_subtitle = CGI_PARAMS.getvalue('subtitle')
-                page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle)
+                page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force)
 
             if p_page == 'development':
                 p_dev = ''
