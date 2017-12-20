@@ -252,7 +252,7 @@ def get_githash_self():
     fullfile_content = ''
     with open(fullfile_name, 'r') as fullfile_fh:
         fullfile_content = fullfile_fh.read()
-    fullfile_fh.read()
+    #fullfile_fh.close()    # with-open does this
 
     # do what "git hash-object" does
     sha_obj = hashlib.sha1()
