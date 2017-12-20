@@ -969,7 +969,7 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
         read_queue(sub_queue, s_q_f_name)
         sub_queue.append(new_sub_q_item)
         if write_queue(sub_queue, s_q_f_name) != -1:
-            print 'Success, written queue item to %s' % (s_q_f_name, )
+            print 'Success, written queue item to %s, go to <a href="?page=queues">queue and logs</a> page.' % (s_q_f_name, )
 
 
 #####################################################################################################################
