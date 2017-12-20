@@ -121,6 +121,11 @@ MEDIA_FILE_SUFFIXES = [ '.avi',
                         '.ts',
                       ]
 
+# files of this type can be played with JW Player
+JWPLAYABLE_SUFFIXES = [ '.flv',
+                        '.m4a',
+                        '.mp4',
+                      ]
 TRANSCODE_METHODS = [ 'trnscd_cmd_audio', 'trnscd_cmd_video', ]
 
 # it seems everybody has the same API key, so we'll use a very common USer AGent string to not draw attention to ourselves
@@ -995,17 +1000,17 @@ def page_downloaded(p_dir):
                     print '&nbsp;',
                 print '</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
-                    if file_extension == '.flv':
+                    if file_extension in JWPLAYABLE_SUFFIXES:
                         print '      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
-                    if file_extension == '.flv':
+                    if file_extension in JWPLAYABLE_SUFFIXES:
                         print '      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1':
-                    if file_extension == '.flv':
+                    if file_extension in JWPLAYABLE_SUFFIXES:
                         print '      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
