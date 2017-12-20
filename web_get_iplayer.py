@@ -28,6 +28,7 @@ of the web UI and therefore must be considered dangerous
 """
 
 # pylint:disable=bad-whitespace
+# pylint:disable=too-many-arguments
 # pylint:disable=too-many-branches
 # pylint:disable=too-many-lines
 # pylint:disable=too-many-locals
@@ -120,6 +121,8 @@ MEDIA_FILE_SUFFIXES = [ '.avi',
                         '.ts',
                       ]
 
+TRANSCODE_METHODS = [ 'trnscd_cmd_audio', 'trnscd_cmd_video', ]
+
 # it seems everybody has the same API key, so we'll use a very common USer AGent string to not draw attention to ourselves
 USAG    = 'BBCiPlayer/4.4.0.235 (Nexus5; Android 4.4.4)'
 API_KEY = 'q5wcnsqvnacnhjap7gzts9y6'
@@ -175,10 +178,16 @@ QUEUE_FIELDS    = [ 'pid', 'title', 'subtitle',
 SUBMIT_QUEUE    = 'submit.txt'  # where the web page submits/enqueues
 PENDING_QUEUE   = 'pending.txt' # cron job takes submit and appends to pending
 ACTIVE_QUEUE    = 'active.txt'  # the currently running download
-COMPLETED_QUEUE = 'completed.txt' # active items added here when done
 RECENT_ITEMS    = 'recent.txt'  # recently downloaded
+
+TRNSCD_QUE_FIELDS   = [ 'pid', 'title', 'subtitle', 'mediatype',
+                        'trnscd_cmd_method', 'trnscd_rez',
+                        'TT_submitted', 'TT_started', 'TT_finished',
+                      ]
+
 TRNSCDE_SUB_QUEUE    = 'transcode_submit.txt'  # submit queue for transcoding
 TRNSCDE_ACT_QUEUE    = 'transcode_active.txt'  # active transcoding
+TRNSCDE_REC_QUEUE    = 'transcode_recent.txt'  # recent transcoding
 
 
 URL_GITHUB_HASH_SELF       = 'https://api.github.com/repos/speculatrix/web_get_iplayer/contents/web_get_iplayer.py'
@@ -238,6 +247,7 @@ def get_githash_self():
     fullfile_content = ''
     with open(fullfile_name, 'r') as fullfile_fh:
         fullfile_content = fullfile_fh.read()
+    fullfile_fh.read()
 
     # do what "git hash-object" does
     sha_obj = hashlib.sha1()
@@ -459,8 +469,8 @@ Please do the following - needs root:
 
 
 #####################################################################################################################
-def cron_run_queue():
-    """ this is the function called when in cron mode """
+def cron_run_download():
+    """ this is the function called when in cron mode to process download queue"""
 
     # get active queue, if it's not empty, then exit as only one download may be active
     # FIXME! allow multiple active downloads
@@ -470,8 +480,8 @@ def cron_run_queue():
     if os.path.isfile(a_q_f_name):
         aqi = read_queue(active_queue, a_q_f_name)
         if aqi > 0:
-            print 'Info, active queue is not empty, so cron job terminating'
-            exit(0)
+            print 'Info, active queue is not empty, so cron downloads terminating'
+            return 0
 
 
     # get pending queue
@@ -552,9 +562,8 @@ def cron_run_queue():
             print 'Error, failed writing submission queue item to %s' % (p_q_f_name, )
 
         # update active queue
-        active_file = os.path.join(CONTROL_DIR, ACTIVE_QUEUE)
-        if write_queue(active_queue, active_file) != -1:
-            print 'Success, written active item %s to %s' % (str(active_queue), active_file, )
+        if write_queue(active_queue, a_q_f_name) != -1:
+            print 'Success, written active item %s to %s' % (str(active_queue), a_q_f_name, )
     #else:
         #print 'Pending queue is empty'
 
@@ -577,14 +586,6 @@ def cron_run_queue():
         if first_item['force'] == 'y':
             cmd = cmd + ' --force'
 
-        if 'trnscd_rez' in first_item and first_item['trnscd_rez'] != '':
-            rezopts = ''
-            fnameadd = ''
-            if first_item['trnscd_rez'] != 'original':
-                rezopts = ' -s %s' % (first_item['trnscd_rez'], )
-                fnameadd = '-%s' % (first_item['trnscd_rez'], )
-            cmd = cmd + ' --command "' + my_settings.get(SETTINGS_SECTION, 'transcode_cmd') + rezopts + ' <filename> <fileprefix>' + fnameadd + '.avi"'
-
 
         # set type - the BBC api uses video/audio, but get_iplayer uses tv/radio
         if first_item['mediatype'] == 'video':
@@ -601,14 +602,12 @@ def cron_run_queue():
         # redirect output
         cmd = cmd + ' > ' + output_file + ' 2>&1'
 
-        print 'background task = %s' % (cmd, )
+        if dbg_level > 0:
+            print 'calling shell to do %s' % (cmd, )
         os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
         # FIXME! set the directory to a subdirectory matching
         # FIXME! the first letter of the program.
-
-        if dbg_level > 0:
-            print 'Cron job is about to run %s' % cmd
 
         #subprocess.check_call(cmd, stdout=output_file, stderror=output_file)
         os.system(cmd)
@@ -617,24 +616,13 @@ def cron_run_queue():
         # record when the download completed
         first_item['TT_finished'] = time.time()
         # set active queue empty now the system() call finished
+        # FIXME! remove an individual item to allow for parallelism
         active_queue = []
         active_file = os.path.join(CONTROL_DIR, ACTIVE_QUEUE)
         if write_queue(active_queue, active_file) == -1:
             print 'Error, failed to write empty active file'
         else:
             print 'Success, written empty active file'
-
-        # if transcode was requested, append to queue
-        # FIXME!
-        #if 'trnscd_rez' in first_item and first_item['trnscd_rez'] != '':
-        if 'trnscd_cmd_method' in first_item and first_item['trnscd_cmd_method'] != '':
-            trnscd_item['trnscd_cmd_method'] = first_item['trnscd_cmd_method']
-            trnscd_item['trnscd_rez'] = first_item['trnscd_rez']
-            trnscd_sub_queue.append(trnscd_item)
-            if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
-                print 'Error, failed to write transcode submission queue'
-            else:
-                print 'Success, written transcode submission queue'
 
         # append the most recent download to recent and shorten that if needed
         recent_queue.append(first_item)
@@ -645,8 +633,119 @@ def cron_run_queue():
             print 'Error, failed to write recent items file'
         else:
             print 'Success, written recent items file'
-    #else:
-        #print 'Pending queue is empty, nothing to do'
+
+        # if transcode was requested, append to queue
+        if 'trnscd_cmd_method' in first_item and first_item['trnscd_cmd_method'] != '':
+            print 'Info, trnscd_cmd_method was set, adding item to transcode queue'
+            # FIXME! check that the queue doesn't already contain an identical task
+            # FIXME! need to know what the name of the downloaded file was!
+            trnscd_item = { 'pid'               : first_item['pid'],
+                            'title'             : first_item['title'],
+                            'subtitle'          : first_item['subtitle'],
+                            'mediatype'         : first_item['mediatype'],
+                            'trnscd_cmd_method' : first_item['trnscd_cmd_method'],
+                            'trnscd_rez'        : first_item['trnscd_rez'],
+                            'TT_submitted'      : time.time(),
+                            'TT_started'        : '',
+                            'TT_finished'       : '',
+                          }
+            trnscd_sub_queue.append(trnscd_item)
+            if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
+                print 'Error, failed to write transcode submission queue'
+            else:
+                print 'Success, written transcode submission queue'
+
+#####################################################################################################################
+def cron_run_transcode():
+    """ this is the function called when in cron mode to process transcode queue"""
+
+    # transcode active
+    trnscd_act_queue = []
+    tsi = 0         # count transcode submissions, -1 if queue couldn't be read
+    t_a_f_name = os.path.join(CONTROL_DIR, TRNSCDE_ACT_QUEUE)
+    if os.path.isfile(t_a_f_name):
+        tai = read_queue(trnscd_act_queue, t_a_f_name)
+        if tai == -1:
+            print 'Info, cron job, couldn\'t read trancode active file'
+    else:
+        print 'Info, transcode actve queue hasn\'t been created'
+
+    # FIXME! allow parallel transcodes
+    if len(trnscd_act_queue) > 0:
+        print 'Info, a transcode is already active'
+        return 0
+
+
+    # transcode submissions
+    trnscd_sub_queue = []
+    tsi = 0         # count transcode submissions, -1 if queue couldn't be read
+    t_s_f_name = os.path.join(CONTROL_DIR, TRNSCDE_SUB_QUEUE)
+    if os.path.isfile(t_s_f_name):
+        tsi = read_queue(trnscd_sub_queue, t_s_f_name)
+        if tsi == -1:
+            print 'Info, cron job, couldn\'t read trancode submission file'
+    else:
+        print 'Info, transcode submission queue hasn\'t been created'
+
+
+    # transcode recent
+    trnscd_rec_queue = []
+    tri = 0         # count recent submissions, -1 if queue couldn't be read
+    t_r_f_name = os.path.join(CONTROL_DIR, TRNSCDE_REC_QUEUE)
+    if os.path.isfile(t_s_f_name):
+        tsi = read_queue(trnscd_rec_queue, t_r_f_name)
+        if tsi == -1:
+            print 'Info, cron job, couldn\'t read trancode recents file'
+    else:
+        print 'Info, transcode submission recents hasn\'t been created'
+
+
+    if len(trnscd_sub_queue):
+        print 'Info, transcode submission queue wasn\'t empty'
+        first_item = trnscd_sub_queue.pop(0)
+        if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
+            print 'Error, failed writing transcode submission queue to file %s' % (t_s_f_name, )
+
+        trnscd_act_queue.append(first_item)
+        first_item['TT_started'] = time.time()
+        if write_queue(trnscd_act_queue, t_a_f_name) == -1:
+            print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
+
+
+        # FIXME! need to discover the downloaded file!
+        orig_file = 'Weatherworld_-_6._Forecasts_p03cgmx8_original.raw.m4a'
+        orig_file = 'Weather_for_the_Week_Ahead_-_2017-12-20_b09jg1lj_original.ts'
+        file_root, file_extension = os.path.splitext(orig_file)
+        file_root = file_root.replace('original', 'transcoded')
+        file_root = file_root.replace('default', 'transcoded')
+        cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
+        rezopts = ''
+        fnameadd = ''
+        if 'trnscd_rez' in first_item and first_item['trnscd_rez'] != '':
+            if first_item['trnscd_rez'] == '' or first_item['trnscd_rez'] != 'original':
+                rezopts = ' -s %s' % (first_item['trnscd_rez'], )
+                fnameadd = '-%s' % (first_item['trnscd_rez'], )
+        #cmd = "%s %s %s %s%s%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_root, fnameadd, '.mp3', )
+        cmd = "%s %s %s %s%s%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_root, fnameadd, '.mp4', )
+       
+        #if dbg_level > 0:
+        print 'calling shell to do %s' % (cmd, )
+        os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+
+        # FIXME! set the directory to a subdirectory matching
+        # FIXME! the first letter of the program.
+
+        #subprocess.check_call(cmd, stdout=output_file, stderror=output_file)
+        os.system(cmd)
+
+        trnscd_act_queue = []
+        if write_queue(trnscd_act_queue, t_a_f_name) == -1:
+            print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
+
+        first_item['TT_finished'] = time.time()
+        trnscd_rec_queue.append(first_item)
+        if write_queue(trnscd_rec_queue, t_r_f_name) == -1:
+            print 'Error, failed writing transcode recents list to file %s' % (t_r_f_name, )
 
 
 #####################################################################################################################
@@ -752,7 +851,7 @@ def page_development(p_dev):
 
 
 #####################################################################################################################
-def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force):
+def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_trnscd_cmd_method, p_trnscd_rez):
     """ this page presents the download function"""
 
     if p_pid == '' or p_submit == '':
@@ -784,26 +883,29 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force):
             radio_checked = ' checked'
 
         print '    <tr><td>Type</td><td>TV:<input type="radio" name="mediatype" value="video" %s/>&nbsp;&nbsp;Radio:<input type="radio" name="mediatype" value="audio" %s/></td></tr>' % (tv_checked, radio_checked, )
-        print '    <tr><td>Transcode Options</td><td>'
-        print_select_resolution()
-        print '</td></tr>'
-        print '    <tr><td>Video Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_video'), )
-        print '    <tr><td>Radio Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_audio'), )
-        #print '    <tr><td colspan="2"><input type="submit" name="submit" value="download" /></td></tr>'
+        print '    <tr><td>Transcode ?</td>'
+        if p_mediatype == 'video':
+            print '        <td><input type="checkbox" name="trnscd_cmd_method" value="trnscd_cmd_video" /></td></tr>\n'
+            print '    <tr><td>Transcode Resolution</td><td>'
+            print_select_resolution()
+            print '</td></tr>'
+            print '    <tr><td>Video Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_video'), )
+        else:
+            print '        <td><input type="checkbox" name="trnscd_cmd_method" value="trnscd_cmd_audio" /></td></tr>\n'
+            print '        <td><input type="hidden" name="trnscd_rez" value="" /></td></tr>\n'
+            print '    <tr><td>Radio Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_audio'), )
+
+        #print '        <td><select name="trnscd_cmd_method">\n'
+        #print '    <option value="">None</option>'
+        #print '    <option value="trnscd_cmd_video">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_video'), )
+        #print '    <option value="trnscd_cmd_audio">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_audio'), )
+        #print '</select>\n</td></tr>'
+
         print '    <tr><td colspan="2"><input type="submit" name="submit" value="enqueue" /></td></tr>'
         print '  </table>'
         print '  </form>'
 
     else:
-        # FIXME! these should be in the main part, in params analysis
-        p_trnscd_rez = ''
-        if 'trnscd_rez' in CGI_PARAMS:
-            p_trnscd_rez = CGI_PARAMS.getvalue('trnscd_rez')
-
-        p_trnscd_cmd_method = ''
-        if 'trnscd_cmd_method' in CGI_PARAMS:
-            p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
-
 
         # set type & quality - by default use video mode
         p_quality = my_settings.get(SETTINGS_SECTION, 'quality_video')
@@ -1070,7 +1172,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue)
+            print_queue_as_html_table(queue, QUEUE_FIELDS)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1088,7 +1190,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue)
+            print_queue_as_html_table(queue, QUEUE_FIELDS)
     else:
         print 'hasn\'t been created'
     print '</ol>\n<br />'
@@ -1106,7 +1208,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue)
+            print_queue_as_html_table(queue, QUEUE_FIELDS)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1123,14 +1225,14 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue)
+            print_queue_as_html_table(queue, QUEUE_FIELDS)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
 
 
     ## transcode queues ##
-    print 'trancode queue active:<ol>'
+    print 'transcode queue active:<ol>'
     quefile = os.path.join(CONTROL_DIR, TRNSCDE_ACT_QUEUE)
     queue = []
     if os.path.isfile(quefile):
@@ -1141,12 +1243,12 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue)
+            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
 
-    print 'trancode queue submitted:<ol>'
+    print 'transcode queue submitted:<ol>'
     quefile = os.path.join(CONTROL_DIR, TRNSCDE_SUB_QUEUE)
     queue = []
     if os.path.isfile(quefile):
@@ -1157,7 +1259,24 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue)
+            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS)
+    else:
+        print 'hasn\'t been created'
+    print '</ol><br />'
+
+
+    print 'transcode recent:<ol>'
+    quefile = os.path.join(CONTROL_DIR, TRNSCDE_REC_QUEUE)
+    queue = []
+    if os.path.isfile(quefile):
+        queue_count = read_queue(queue, quefile)
+        if queue_count == -1:
+            print '<b>error</b>, failed reading file'
+        elif len(queue) == 0:
+        #elif queue:
+            print 'empty'
+        else:
+            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1400,14 +1519,6 @@ def page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method):
 
     print 'trancoding files with inodes matching %s\n<br />' % ','.join(p_transcode_inodes)
 
-    if p_trnscd_cmd_method == '':
-        print '<p>Error, transcode method wasn\'t provided</p>\n'
-
-    # check that user provided known transcode method
-    if p_trnscd_cmd_method != '' and (p_trnscd_cmd_method not in SETTINGS_DEFAULTS.keys()):
-        print '<p>Error, %s is not a recognised transcode method</p>\n' % (p_transcode_inodes, )
-        p_trnscd_cmd_method == ''
-
     if p_submit == '' or p_submit != 'Transcode' or p_trnscd_cmd_method == '':
         print '<p>Confirm transcode options:</p>'
         print '<form method="get" action="">'
@@ -1480,7 +1591,7 @@ def pid_to_download_link(p_pid, p_mediatype, p_title, p_subtitle):
 
 
 #####################################################################################################################
-def print_queue_as_html_table(q_data):
+def print_queue_as_html_table(q_data, queue_fields):
     """prints a queue as an html table, needs to know expected fields in QUEUE_FIELDS"""
 
     #print '=== %s ===<br />', (str(q_data), )
@@ -1490,7 +1601,7 @@ def print_queue_as_html_table(q_data):
         i = 0
         print '<table>'
         print '\t<tr>'
-        for key in QUEUE_FIELDS:
+        for key in queue_fields:
             if key[:3] == 'TT_':
                 print '\t\t<th align="center">%s</th>' % (key[3:], )
             else:
@@ -1499,8 +1610,7 @@ def print_queue_as_html_table(q_data):
         while i < len(q_data):
             print '\t<tr>'
 
-            for key in QUEUE_FIELDS:
-            #for key, elem in q_data[i].items():
+            for key in queue_fields:
                 if key in q_data[i]:
                     elem = q_data[i][key]
                 else:
@@ -1675,8 +1785,7 @@ def print_audio_listing_rows(j_rows):
 def print_select_resolution():
     """prints an HTML SELECT of standard resolutions for transcoding"""
 
-    print '<select name="transrez">\n'                               \
-          '\t<option value="">Don\'t transcode</option>\n'           \
+    print '<select name="trnscd_rez">\n'                               \
           '\t<option value="original">original resolution</option>\n'\
           '\t<option value="1920x1080">1920x1080 1080p</option>\n'   \
           '\t<option value="1280x720">1280x720 720p</option>\n'      \
@@ -1685,6 +1794,7 @@ def print_select_resolution():
           '\t<option value="720x416">720x416 NTSC</option>\n'        \
           '</select>\n'
 
+          #'\t<option value="">Don\'t transcode</option>\n'           \
 
 #####################################################################################################################
 def read_queue(queue, queue_file_name):
@@ -1882,6 +1992,14 @@ table td, table th {
         p_trnscd_cmd_method = ''
         if 'trnscd_cmd_method' in CGI_PARAMS:
             p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
+            # check that user provided known transcode method
+            if p_trnscd_cmd_method != '' and (p_trnscd_cmd_method not in TRANSCODE_METHODS):
+                print '<p>Error, %s is not a recognised transcode method</p>\n' % (p_transcode_inodes, )
+                p_trnscd_cmd_method == ''
+
+        p_trnscd_rez = ''
+        if 'trnscd_rez' in CGI_PARAMS:
+            p_trnscd_rez = CGI_PARAMS.getvalue('trnscd_rez')
 
 
         ########
@@ -1893,10 +2011,7 @@ table td, table th {
 
             p_page = CGI_PARAMS.getvalue('page')
 
-            if p_page == 'transcode' or (p_page == 'downloaded' and p_transcode_inodes):
-                page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method)
-
-            if p_page == 'downloaded' and not p_transcode_inodes:
+            if p_page == 'downloaded':
                 page_downloaded(p_dir)
 
             if p_page == 'download':
@@ -1906,7 +2021,7 @@ table td, table th {
                 p_subtitle = ''
                 if 'subtitle' in CGI_PARAMS:
                     p_subtitle = CGI_PARAMS.getvalue('subtitle')
-                page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force)
+                page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_trnscd_cmd_method, p_trnscd_rez)
 
             if p_page == 'development':
                 p_dev = ''
@@ -1937,6 +2052,12 @@ table td, table th {
 
             if p_page == 'settings':
                 page_settings()
+
+            if p_page == 'transcode':
+                if p_trnscd_cmd_method == '':
+                    print '<p>Error, transcode method wasn\'t provided</p>\n'
+                else:
+                    page_transcode(p_submit, p_transcode_inodes, p_trnscd_cmd_method)
 
             if p_page == 'upgrade_check':
                 page_upgrade_check()
@@ -1976,7 +2097,8 @@ else:
         exit(1)
 
     if sys.argv[1] == '-cron':
-        cron_run_queue()
+        cron_run_download()
+        cron_run_transcode()
     else:
         print 'Error, unknown argument %s' % (sys.argv[1], )
 

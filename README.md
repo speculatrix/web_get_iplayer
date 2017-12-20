@@ -140,6 +140,10 @@ Some useful scripts are provided for doing this, ts-to-mp4.sh and m4a-to-mp3.sh
 download them and make them executable. A good place to put them is /usr/local/bin,
 but you can configure their locations in the settings.
 
+If you install the JWPlayer, then it can play .flv and .mp4 video files,
+but also luckily .m4a audio files, without them needing to be transcoded,
+which means you do everything in the browser.
+
 ## Known problems and shortcomings
 
 * sometimes programs don't show up in search but do on
