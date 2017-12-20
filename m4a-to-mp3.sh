@@ -28,6 +28,6 @@ fi
 
 #nice ffmpeg --enable-libfdk-aac --enable-nonfree -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
 #nice ffmpeg --enable-nonfree -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
-time nice ffmpeg -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
+time nice ffmpeg  -loglevel warning -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
 
 
