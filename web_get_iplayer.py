@@ -84,13 +84,15 @@ SETTINGS_FILE     = 'web_get_iplayer.settings'
 SETTINGS_SECTION  = 'user'
 
 # default values of the settings when being created
-SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                , # http proxy, blank if not set
-                      'base_url'            : '/iplayer'                        , # relative URL direct to the iplayer files
+SETTINGS_DEFAULTS = { 'base_url'            : '/iplayer'                        , # relative URL direct to the iplayer files
+                      'directory'           : '1'                               , # automatically store downloads in sub-directory
                       'download_args'       : '--nopurge --nocopyright --raw --thumb --thumbsize 150',
                       'flash_height'        : '720'                             , # standard flashhd BBC video rez
                       'flash_width'         : '1280'                            , # ...
                       'get_iplayer'         : PATH_OF_SCRIPT + '/get_iplayer'   , # full get_iplayer path
+                      'http_proxy'          : ''                                , # http proxy, blank if not set
                       'iplayer_directory'   : '/home/iplayer'                   , # file system location of downloaded files
+                      'max_download_par'    : '1'                               , # maximum download processes in parallel
                       'max_recent_items'    : '5'                               , # maximum recent items
                       'max_trnscd_par'      : '1'                               , # maximum transcoding processes in parallel
                       'quality_audio'       : 'best,hlsaachigh,hlsaacstd'       , # flashaachigh, flashaacstd etc
@@ -112,9 +114,17 @@ SETTINGS_DEFAULTS = { 'http_proxy'          : ''                                
                       'Flv7Key'             : ''                                , # JW Player 7 Key, leave blank if you don't have one
                     }
 
-TRANSCODE_COMMANDS = { 'trnscd_cmd_audio': { 'inext': 'm4a', 'outext': 'mp3', },
-                       'trnscd_cmd_video': { 'inext': 'ts',  'outext': 'mp4', },
+TRANSCODE_COMMANDS = { 'trnscd_cmd_audio': { 'name': 'M4A to MP3', 'mediatype': 'audio', 'command': '/usr/local/bin/m4a-to-mp3.sh', 'inext': 'm4a', 'outext': 'mp3', },
+                       'trnscd_cmd_video': { 'name': 'TS to MP4',  'mediatype': 'video', 'command': '/usr/local/bin/ts-to-mp4.sh',  'inext': 'ts',  'outext': 'mp4', },
                      }
+
+TRANSCODE_RESOLUTIONS = { 'original'  : 'original resolution',
+                          '1920x1080' : '1920x1080 1080p',
+                          '1280x720'  : '1280x720 720p',
+                          '1024x600'  : '1024x600 WVGA',
+                          '720x576'   : '720x576 PAL',
+                          '720x416'   : '720x416 NTSC',
+                        }
 
 # which video files to show from the download folder
 MEDIA_FILE_SUFFIXES = [ '.avi',
@@ -178,7 +188,7 @@ INPUT_FORM_ESCAPE_TABLE = {
 }
 
 
-QUEUE_FIELDS    = [ 'pid', 'title', 'subtitle',
+QUEUE_FIELDS    = [ 'inode', 'pid', 'title', 'subtitle',
                     'mediatype', 'quality', 'force',
                     'trnscd_cmd_method', 'trnscd_rez',
                     'TT_submitted', 'TT_started', 'TT_finished',
@@ -189,7 +199,7 @@ PENDING_QUEUE   = 'pending.txt' # cron job takes submit and appends to pending
 ACTIVE_QUEUE    = 'active.txt'  # the currently running download
 RECENT_ITEMS    = 'recent.txt'  # recently downloaded
 
-TRNSCD_QUE_FIELDS   = [ 'pid', 'title', 'subtitle', 'mediatype',
+TRNSCD_QUE_FIELDS   = [ 'inode', 'pid', 'title', 'subtitle', 'mediatype',
                         'trnscd_cmd_method', 'trnscd_rez',
                         'TT_submitted', 'TT_started', 'TT_finished',
                       ]
@@ -256,7 +266,6 @@ def get_githash_self():
     fullfile_content = ''
     with open(fullfile_name, 'r') as fullfile_fh:
         fullfile_content = fullfile_fh.read()
-    #fullfile_fh.close()    # with-open does this
 
     # do what "git hash-object" does
     sha_obj = hashlib.sha1()
@@ -633,6 +642,11 @@ def cron_run_download():
         else:
             print 'Success, written empty active file'
 
+        # attempt to node number of the downloaded file
+        # as this makes it much easier to track if we end up
+        # with multiple items having transcoded it
+        first_item['inode'] = find_file_inode_by_pid(first_item['pid'])
+
         # append the most recent download to recent
         recent_queue.append(first_item)
         # shorten recent queue to max allowed in settings
@@ -649,7 +663,8 @@ def cron_run_download():
             print 'Info, trnscd_cmd_method was set, adding item to transcode queue'
             # FIXME! check that the queue doesn't already contain an identical task
             # FIXME! need to know what the name of the downloaded file was!
-            trnscd_item = { 'pid'               : first_item['pid'],
+            trnscd_item = { 'inode'             : first_item['inode'],
+                            'pid'               : first_item['pid'],
                             'title'             : first_item['title'],
                             'subtitle'          : first_item['subtitle'],
                             'mediatype'         : first_item['mediatype'],
@@ -668,6 +683,9 @@ def cron_run_download():
 #####################################################################################################################
 def cron_run_transcode():
     """ this is the function called when in cron mode to process transcode queue"""
+
+
+    ######################### grab all the queues
 
     # transcode active
     trnscd_act_queue = []
@@ -703,12 +721,14 @@ def cron_run_transcode():
     tri = 0         # count recent submissions, -1 if queue couldn't be read
     t_r_f_name = os.path.join(CONTROL_DIR, TRNSCDE_REC_QUEUE)
     if os.path.isfile(t_s_f_name):
-        tsi = read_queue(trnscd_rec_queue, t_r_f_name)
-        if tsi == -1:
+        tri = read_queue(trnscd_rec_queue, t_r_f_name)
+        if tri == -1:
             print 'Info, cron job, couldn\'t read trancode recents file'
     else:
         print 'Info, transcode submission recents hasn\'t been created'
 
+
+    ######################### see if anything needs transcoding
 
     if len(trnscd_sub_queue):
         print 'Info, transcode submission queue wasn\'t empty'
@@ -723,11 +743,11 @@ def cron_run_transcode():
 
         # break the file up into parts, create a new file name according to
         # how we transcode it, and generate a command to transcode
-        orig_file = find_filename_by_pid(first_item['pid'])
-        file_root, file_extension = os.path.splitext(orig_file)
-        file_root = file_root.replace('original', 'transcoded')
-        file_root = file_root.replace('default', 'transcoded')
-        file_root = file_root.replace('editorial', 'transcoded')
+        orig_file = find_file_name_by_inode(first_item['inode'])
+        file_prefix, file_ext = os.path.splitext(orig_file)
+        file_prefix = file_prefix.replace('original', 'transcoded')
+        file_prefix = file_prefix.replace('default', 'transcoded')
+        file_prefix = file_prefix.replace('editorial', 'transcoded')
         cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
         rezopts = ''
         fnameadd = ''
@@ -735,7 +755,7 @@ def cron_run_transcode():
             if first_item['trnscd_rez'] == '' or first_item['trnscd_rez'] != 'original':
                 rezopts = ' -s %s' % (first_item['trnscd_rez'], )
                 fnameadd = '-%s' % (first_item['trnscd_rez'], )
-        cmd = "%s %s %s %s%s.%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_root, fnameadd, TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'], )
+        cmd = "%s %s %s %s%s.%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_prefix, fnameadd, TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'], )
 
         log_dir = os.path.join(CONTROL_DIR, 'logs')
         if not os.path.isdir(log_dir):
@@ -780,20 +800,20 @@ def delete_files_by_inode(inode_list, del_img_flag):
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
     for file_name in sorted(file_list):
-        full_file = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
-        if os.path.isfile(full_file):    # need to check file exists in case its a jpg we already deleted
-            file_stat = os.stat(full_file)
-            #print 'considering file %s which has inode %d\n<br >' % (full_file, file_stat[stat.ST_INO], )
+        full_file_path = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
+        if os.path.isfile(full_file_path):    # need to check file exists in case its a jpg we already deleted
+            file_stat = os.stat(full_file_path)
+            #print 'considering file %s which has inode %d\n<br >' % (full_file_path, file_stat[stat.ST_INO], )
 
             if str(file_stat[stat.ST_INO]) in inode_list:
-                print 'file %s is being deleted \n<br >' % (full_file, )
+                print 'file %s is being deleted \n<br >' % (full_file_path, )
                 try:
-                    os.remove(full_file)
+                    os.remove(full_file_path)
                 except OSError: # for some reason the above works but throws exception
-                    print 'error deleting %s\n<br />' % full_file
+                    print 'error deleting %s\n<br />' % full_file_path
 
                 if del_img_flag:
-                    file_prefix, _ignore = os.path.splitext(full_file)
+                    file_prefix, _ignore = os.path.splitext(full_file_path)
                     image_file_name = file_prefix + '.jpg'
                     if os.path.isfile(image_file_name):
                         print 'image %s is being deleted \n<br >' % image_file_name
@@ -806,7 +826,49 @@ def delete_files_by_inode(inode_list, del_img_flag):
 
 
 #####################################################################################################################
-def find_filename_by_pid(p_pid):
+def find_file_inode_by_pid(p_pid):
+    """this is used to find the inode of a file to uniquely identify it when freshly downloaded,
+    it only checks for files with a media file type, so ignores jpegs for example
+    FIXME! doesn't look in subdirectories.
+    """
+
+    file_inode = 0
+
+    print 'Debug, find_file_inode_by_pid pid "%s"' % (pid, )
+
+    file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+    for file_name in file_list:
+        file_prefix, file_ext = os.path.splitext(file_name)
+        print 'Debug, find_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, )
+        if p_pid in file_prefix and file_ext in MEDIA_FILE_SUFFIXES:
+            file_inode = os.stat(file_name).st_ino
+            print 'Debug, found inode %d' % (file_inode, )
+
+    return file_inode
+
+
+#####################################################################################################################
+def find_file_name_by_inode(inode):
+    """given an inode, finds the file name relative to the iplayer_directory
+    FIXME! doesn't look in subdirectories.
+    """
+
+    print 'Debug, find_file_name_by_inode inode "%s"' % (p_inode, )
+
+    file_wanted = ''
+
+    file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+    for file_name in file_list:
+        if inode == os.stat(file_name).st_ino:
+            print 'Debug, found file %s' % (file_name, )
+            file_wanted = file_name
+
+    return file_wanted
+
+
+
+#####################################################################################################################
+def find_file_name_by_pid(p_pid):
     """we don't know the exact file name when we downloaded something
     FIXME! doesn't look in subdirectories.
     """
@@ -814,7 +876,7 @@ def find_filename_by_pid(p_pid):
     wanted_file = ''
 
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
-    for file_name in sorted(file_list):
+    for file_name in file_list:
         if p_pid in file_name and ('original' in file_name or 'default' in file_name):
             wanted_file = file_name
 
@@ -927,7 +989,7 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
         if p_mediatype == 'video':
             print '        <td><input type="checkbox" name="trnscd_cmd_method" value="trnscd_cmd_video" /></td></tr>\n'
             print '    <tr><td>Transcode Resolution</td><td>'
-            print_select_resolution()
+            print_select_resolution('')
             print '</td></tr>'
             print '    <tr><td>Video Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_video'), )
         else:
@@ -956,14 +1018,15 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
         new_sub_q_item = {  'pid'               : p_pid,
                             'title'             : p_title,
                             'subtitle'          : p_subtitle,
-                            'TT_submitted'      : time.time(),
-                            'TT_started'        : '',
-                            'TT_finished'       : '',
                             'mediatype'         : p_mediatype,
                             'quality'           : p_quality,
                             'trnscd_cmd_method' : p_trnscd_cmd_method,
                             'trnscd_rez'        : p_trnscd_rez,
                             'force'             : p_force,
+                            'TT_submitted'      : time.time(),
+                            'TT_started'        : '',           # obv not started
+                            'TT_finished'       : '',           # obv not started
+                            'inode'             : '',           # doesn't exist yet
                          }
 
         # read the existing submission queue and extend it
@@ -988,7 +1051,7 @@ def page_downloaded(p_dir):
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
     for file_item in sorted(file_list):
         if os.path.isdir(os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_item)):
-            file_name, file_extension = os.path.splitext(file_item)
+            file_name, file_ext = os.path.splitext(file_item)
             print '      <option value="%s"' % (file_name, ),
             if file_name == p_dir:
                 print ' selected'
@@ -1024,8 +1087,8 @@ def page_downloaded(p_dir):
 
         file_list = os.listdir(full_dir)
         for file_item in sorted(file_list):
-            file_name, file_extension = os.path.splitext(file_item)
-            if file_extension in MEDIA_FILE_SUFFIXES:
+            file_name, file_ext = os.path.splitext(file_item)
+            if file_ext in MEDIA_FILE_SUFFIXES:
                 file_stat = os.stat("%s/%s" % (full_dir, file_item, ))
                 print '    <tr>\n      <td align="center">',
                 file_name_jpg = "%s/%s.jpg" % (full_dir, file_name, )
@@ -1035,17 +1098,17 @@ def page_downloaded(p_dir):
                     print '&nbsp;',
                 print '</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
-                    if file_extension in JWPLAYABLE_SUFFIXES:
+                    if file_ext in JWPLAYABLE_SUFFIXES:
                         print '      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
-                    if file_extension in JWPLAYABLE_SUFFIXES:
+                    if file_ext in JWPLAYABLE_SUFFIXES:
                         print '      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1':
-                    if file_extension in JWPLAYABLE_SUFFIXES:
+                    if file_ext in JWPLAYABLE_SUFFIXES:
                         print '      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
                     else:
                         print '      <td>&nbsp;</td>'
@@ -1332,7 +1395,7 @@ def page_queues(p_pid):
     if os.path.isdir(log_dir):
         file_list = os.listdir(log_dir)
         print 'Log files in %s:\n<br />\n<ul>' % (log_dir, )
-        for log_file_name in file_list:
+        for log_file_name in sorted(file_list):
             print '<a href="?page=queues&pid=%s">%s</a>&nbsp;' % (log_file_name, log_file_name, )
         print '</ul><br />\n<br />'
     else:
@@ -1554,13 +1617,7 @@ def page_settings():
 
 
 #####################################################################################################################
-def page_transcode_pid(p_submit, p_pid, p_mediatype, p_trnscd_cmd_method):
-
-    print "<p>Can't do this</p>"
-
-
-#####################################################################################################################
-def page_transcode_inode(p_submit, p_inode, p_trnscd_cmd_method, p_trnscd_rez):
+def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnscd_cmd_method, p_trnscd_rez):
     """scan the downloaded list of files and transcode any whose inode matches
     one in the list"""
 
@@ -1569,11 +1626,9 @@ def page_transcode_inode(p_submit, p_inode, p_trnscd_cmd_method, p_trnscd_rez):
     if p_submit == '' or p_submit != 'Transcode' or p_trnscd_cmd_method == '':
         print '<p>Confirm transcode options:</p>'
         print '<form method="get" action="">'
-        print '<select name="trnscd_cmd_method">\n'
-        print '    <option value="trnscd_cmd_video">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_video'), )
-        print '    <option value="trnscd_cmd_audio">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_audio'), )
-        print '</select>\n<br />'
-        print_select_resolution()
+        print_select_transcode_method(p_trnscd_cmd_method)
+        print '<br />'
+        print_select_resolution(p_trnscd_rez)
         print '<br />'
 
         print '<input type="hidden" name="inode" value="%s">' % (p_inode, )
@@ -1583,23 +1638,21 @@ def page_transcode_inode(p_submit, p_inode, p_trnscd_cmd_method, p_trnscd_rez):
     else:
         file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
         for file_name in sorted(file_list):
-            full_file_name = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
-            file_root, file_extension = os.path.splitext(full_file_name)
-            file_root = file_root.replace('original', 'transcoded')
-            file_root = file_root.replace('default', 'transcoded')
-            file_root = file_root.replace('editorial', 'transcoded')
-            file_stat = os.stat(full_file_name)
-            #print 'considering file %s which has inode %d\n<br >' % (full_file_name, file_stat[stat.ST_INO], )
+            full_file_path = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
+            file_prefix, file_ext = os.path.splitext(full_file_path)
+            file_prefix = file_prefix.replace('original', 'transcoded')
+            file_prefix = file_prefix.replace('default', 'transcoded')
+            file_prefix = file_prefix.replace('editorial', 'transcoded')
+            file_stat = os.stat(full_file_path)
+            #print 'Debug, considering file %s which has inode %d\n<br >' % (full_file_path, file_stat[stat.ST_INO], )
             if str(file_stat[stat.ST_INO]) == p_inode:
                 rezopts = ''
                 fnameadd = ''
                 if p_trnscd_rez != '' and p_trnscd_rez != 'original':
                     rezopts = ' -s %s' % (p_trnscd_rez, )
                     fnameadd = '-%s' % (p_trnscd_rez, )
- 
-                #full_file_mp4 = '%s.mp4' % ( os.path.splitext(full_file_name)[0], )
-                cmd = "%s %s %s %s%s.%s 2>&1" % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), rezopts, full_file_name, file_root, fnameadd, TRANSCODE_COMMANDS[p_trnscd_cmd_method]['outext'], )
-                #print 'file %s is being transcoded with command %s\n<br ><pre>\n' % (full_file_name, cmd, )
+
+                cmd = "%s %s %s %s%s.%s 2>&1" % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), rezopts, full_file_path, file_prefix, fnameadd, TRANSCODE_COMMANDS[p_trnscd_cmd_method]['outext'], )
                 print 'file transcoding<pre>\n%s\n' % (cmd, )
                 sys.stdout.flush()
                 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0) # capture stdout
@@ -1677,12 +1730,15 @@ def print_queue_as_html_table(q_data, queue_fields):
                 else:
                     elem = ''
 
-                if key == 'pid':
+                if key == 'inode':
+                    print '\t\t<td align="center">'
+                    if ('inode' in q_data[i] and q_data[i]['inode'] != ''):
+                        print '<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], )
+                elif key == 'pid':
                     print '\t\t<td align="center">%s<br />' % (elem, )
                     if elem != '':
                         print '<a href="?page=queues&pid=%s">show log</a><br />\n' % (elem, )
-                        print '<a href="?page=transcode_pid&pid=%s&mediatype=%s&trnscd_cmd_method=%s">transcode</a><br />\n' % (elem, q_data[i]['mediatype'], q_data[i]['trnscd_cmd_method'], )
-                        print '<a href="?page=download&pid=%s&mediatype=%s&title=%s&subtitle=%s">redownload</a><br />\n' % (elem, q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'],)
+                        print '<a href="?page=download&pid=%s&mediatype=%s&title=%s&subtitle=%s">redownload</a><br />\n' % (q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'],)
                     else:
                         print '&nbsp;'
                 elif key[:3] == 'TT_' and elem != '':
@@ -1844,19 +1900,29 @@ def print_audio_listing_rows(j_rows):
 
 
 #######################################################################################################################
-def print_select_resolution():
+def print_select_resolution(p_trsncd_rez):
     """prints an HTML SELECT of standard resolutions for transcoding"""
 
-    print '<select name="trnscd_rez">\n'                               \
-          '\t<option value="original">original resolution</option>\n'\
-          '\t<option value="1920x1080">1920x1080 1080p</option>\n'   \
-          '\t<option value="1280x720">1280x720 720p</option>\n'      \
-          '\t<option value="1024x600">1024x600 WVGA</option>\n'      \
-          '\t<option value="720x576">720x576 PAL</option>\n'         \
-          '\t<option value="720x416">720x416 NTSC</option>\n'        \
-          '</select>\n'
+    print '<select name="trnscd_rez">'
+    for rez in TRANSCODE_RESOLUTIONS:
+        selected = ''
+        if rez == p_trsncd_rez:
+            selected = ' selected'
+        print '\t<option value="%s" %s>%s</option>' % (rez, selected, TRANSCODE_RESOLUTIONS[rez], )
+    print '</select>'
 
-          #'\t<option value="">Don\'t transcode</option>\n'           \
+
+#####################################################################################################################
+def print_select_transcode_method(p_trnscd_cmd_method):
+    """prints an HTML SELECT of transcoding methods"""
+
+    print '<select name="trnscd_cmd_method">\n'
+    for tr_method in TRANSCODE_COMMANDS:
+        selected = ''
+        if tr_method == p_trnscd_cmd_method:
+            selected = ' selected'
+        print '    <option value="%s" %s>%s</option>' % (tr_method, selected, TRANSCODE_COMMANDS[tr_method]['name'], )
+    print '</select>'
 
 #####################################################################################################################
 def read_queue(queue, queue_file_name):
@@ -1868,7 +1934,6 @@ def read_queue(queue, queue_file_name):
             with open(queue_file_name) as infile:
                 queue.extend(json.load(infile))
 
-            infile.close()
             queue_count = len(queue)
         except OSError:
             # ignore when file can't be opened
@@ -2027,6 +2092,9 @@ table td, table th {
         p_inode = ''
         if 'inode' in CGI_PARAMS:
             p_inode = CGI_PARAMS.getvalue('inode')
+            if not bool(re.compile('^[0-9.]+\\Z').match(p_inode)):
+                print 'p_inode is illegal\n'
+                illegal_param_count += 1
 
         p_pid = ''
         if 'pid' in CGI_PARAMS:
@@ -2042,10 +2110,6 @@ table td, table th {
                 print 'p_mediatype is illegal\n'
                 illegal_param_count += 1
 
-        p_transcode_inodes = []
-        if 'transcode_inodes' in CGI_PARAMS:
-            p_transcode_inodes = CGI_PARAMS.getlist('transcode_inodes')
-
         p_sought = ''
         if 'sought' in CGI_PARAMS:
             p_sought = CGI_PARAMS.getvalue('sought')
@@ -2055,13 +2119,21 @@ table td, table th {
         if 'submit' in CGI_PARAMS:
             p_submit = CGI_PARAMS.getvalue('submit')
 
+        p_subtitle = ''
+        if 'subtitle' in CGI_PARAMS:
+            p_subtitle = CGI_PARAMS.getvalue('subtitle')
+
+        p_title = ''
+        if 'title' in CGI_PARAMS:
+            p_title = CGI_PARAMS.getvalue('title')
+
         p_trnscd_cmd_method = ''
         if 'trnscd_cmd_method' in CGI_PARAMS:
             p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
             # check that user provided known transcode method
             if p_trnscd_cmd_method != '' and (p_trnscd_cmd_method not in TRANSCODE_METHODS):
-                print '<p>Error, %s is not a recognised transcode method</p>\n' % (p_trnscd_cmd_method, )
-                p_trnscd_cmd_method == ''
+                print 'p_trnscd_cmd_method is illegal'
+                illegal_param_count += 1
 
         p_trnscd_rez = ''
         if 'trnscd_rez' in CGI_PARAMS:
@@ -2081,12 +2153,6 @@ table td, table th {
                 page_downloaded(p_dir)
 
             if p_page == 'download':
-                p_title = ''
-                if 'title' in CGI_PARAMS:
-                    p_title = CGI_PARAMS.getvalue('title')
-                p_subtitle = ''
-                if 'subtitle' in CGI_PARAMS:
-                    p_subtitle = CGI_PARAMS.getvalue('subtitle')
                 page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_trnscd_cmd_method, p_trnscd_rez)
 
             if p_page == 'development':
@@ -2119,14 +2185,8 @@ table td, table th {
             if p_page == 'settings':
                 page_settings()
 
-            if p_page == 'transcode_pid':
-                if p_trnscd_cmd_method == '':
-                    print '<p>Error, transcode method wasn\'t provided</p>\n'
-                else:
-                    page_transcode_pid(p_submit, p_pid, p_mediatype, p_trnscd_cmd_method)
-
             if p_page == 'transcode_inode':
-                page_transcode_inode(p_submit, p_inode, p_trnscd_cmd_method, p_trnscd_rez)
+                page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnscd_cmd_method, p_trnscd_rez)
 
             if p_page == 'upgrade_check':
                 page_upgrade_check()
@@ -2143,7 +2203,7 @@ def write_queue(queue, queue_file_name):
     try:
         with open(queue_file_name, 'w') as outfile:
             json.dump(queue, outfile)
-        outfile.close()
+
         error_flag = 0
     except OSError:
         print 'Error, write_queue couldn\t open file %s for writing' % (queue_file_name, )
