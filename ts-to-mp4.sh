@@ -8,8 +8,10 @@ if [ "$1" == "-s" ] ; then
 	shift
 fi
 
-if [ "$1" == "" ] ; then
-	echo "no input file given"
+INFILE="$1"
+
+if [ "$INFILE" == "" ] ; then
+	echo "no input file specified"
 	exit 1
 fi
 
@@ -29,9 +31,13 @@ if [ -f "$2" ] ; then
 fi
 
 if [ "$scale" == "" ] ; then
-	errcode = time nice ffmpeg -loglevel warning -i $1		-c:a copy -c:v copy		$2
+	errcode = time nice ffmpeg -loglevel warning -i "$INFILE"		-c:a copy -c:v copy		$2
 else
-	errcode = time nice ffmpeg -loglevel warning -i $1 $scale	-c:v libx264 -profile:v baseline	$2
+	errcode = time nice ffmpeg -loglevel warning -i "$INFILE" $scale	-c:v libx264 -profile:v baseline $2
+fi
+
+if [ $errcode -ne 0 ] ; then
+	echo "ffmpeg returned error code $errcode"
 fi
 
 return errcode
