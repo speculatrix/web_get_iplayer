@@ -40,6 +40,7 @@ import base64
 import cgi
 import cgitb
 import ConfigParser
+from collections import OrderedDict
 #import datetime
 import hashlib
 import json
@@ -118,13 +119,15 @@ TRANSCODE_COMMANDS = { 'trnscd_cmd_audio': { 'name': 'M4A to MP3', 'mediatype': 
                        'trnscd_cmd_video': { 'name': 'TS to MP4',  'mediatype': 'video', 'command': '/usr/local/bin/ts-to-mp4.sh',  'inext': 'ts',  'outext': 'mp4', },
                      }
 
-TRANSCODE_RESOLUTIONS = { 'original'  : 'original resolution',
-                          '1920x1080' : '1920x1080 1080p',
-                          '1280x720'  : '1280x720 720p',
-                          '1024x600'  : '1024x600 WVGA',
-                          '720x576'   : '720x576 PAL',
-                          '720x416'   : '720x416 NTSC',
-                        }
+TRANSCODE_RESOLUTIONS = OrderedDict( [  ('original', 'original resolution'),
+                                        ('1920x1080'  , '1920x1080 1080p'),
+                                        ('1280x720'   , '1280x720 720p'),
+                                        ('1024x600'   , '1024x600 WVGA'),
+                                        ('720x576'    , '720x576 PAL'),
+                                        ('720x416'    , '720x416 NTSC'),
+                                        ('360x288'    , '360x288 qPAL'),
+                                        ('720x208'    , '360x208 qNTSC'),
+                                   ] )
 
 # which video files to show from the download folder
 MEDIA_FILE_SUFFIXES = [ '.avi',
