@@ -47,6 +47,7 @@ import json
 import os
 from os.path import expanduser
 import re               # now have two problems
+import shutil
 import stat
 import sys
 import time
@@ -119,15 +120,15 @@ TRANSCODE_COMMANDS = { 'trnscd_cmd_audio': { 'name': 'M4A to MP3', 'mediatype': 
                        'trnscd_cmd_video': { 'name': 'TS to MP4',  'mediatype': 'video', 'command': '/usr/local/bin/ts-to-mp4.sh',  'inext': 'ts',  'outext': 'mp4', },
                      }
 
-TRANSCODE_RESOLUTIONS = OrderedDict( [  ('original', 'original resolution'),
-                                        ('1920x1080'  , '1920x1080 1080p'),
-                                        ('1280x720'   , '1280x720 720p'),
-                                        ('1024x600'   , '1024x600 WVGA'),
-                                        ('720x576'    , '720x576 PAL'),
-                                        ('720x416'    , '720x416 NTSC'),
-                                        ('360x288'    , '360x288 qPAL'),
-                                        ('720x208'    , '360x208 qNTSC'),
-                                   ] )
+TRANSCODE_RESOLUTIONS = OrderedDict( [ ('original'  , 'original resolution'),
+                                       ('1920x1080' , '1920x1080 1080p' ),
+                                       ('1280x720'  , '1280x720 720p'   ),
+                                       ('1024x600'  , '1024x600 WVGA'   ),
+                                       ('720x576'   , '720x576 PAL'     ),
+                                       ('720x416'   , '720x416 NTSC'    ),
+                                       ('360x288'   , '360x288 qPAL'    ),
+                                       ('720x208'   , '360x208 qNTSC'   ),
+                                     ] )
 
 # which video files to show from the download folder
 MEDIA_FILE_SUFFIXES = [ '.avi',
@@ -748,9 +749,9 @@ def cron_run_transcode():
         # how we transcode it, and generate a command to transcode
         orig_file = find_file_name_by_inode(first_item['inode'])
         file_prefix, file_ext = os.path.splitext(orig_file)
-        file_prefix = file_prefix.replace('original', 'transcoded')
-        file_prefix = file_prefix.replace('default', 'transcoded')
-        file_prefix = file_prefix.replace('editorial', 'transcoded')
+        trnscd_prefix = file_prefix.replace('original', 'transcoded')
+        trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
+        trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
         cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
         rezopts = ''
         fnameadd = ''
@@ -758,7 +759,7 @@ def cron_run_transcode():
             if first_item['trnscd_rez'] == '' or first_item['trnscd_rez'] != 'original':
                 rezopts = ' -s %s' % (first_item['trnscd_rez'], )
                 fnameadd = '-%s' % (first_item['trnscd_rez'], )
-        cmd = "%s %s %s %s%s.%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, file_prefix, fnameadd, TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'], )
+        cmd = "%s %s %s %s%s.%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, trnscd_prefix, fnameadd, TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'], )
 
         log_dir = os.path.join(CONTROL_DIR, 'logs')
         if not os.path.isdir(log_dir):
@@ -783,7 +784,16 @@ def cron_run_transcode():
         if sys_error != 0:
             print "Error, transcode returned error code %d" % (sys_error, )
 
-        # FIXME! copy the picture if it exists
+        # copy the image if possible
+        old_image = '%s.jpg' % (file_prefix, )
+        new_image = '%s%s.jpg' % (trnscd_prefix, fnameadd, )
+        print '<p>Debug, copyfile "%s" "%s"</p>' % (old_image, new_image, )
+        if not os.path.isfile(old_image):
+            print '<p><b>Error</b>, old_image "%s" file doesn\'t exist</p>' % (new_image, )
+        if os.path.isfile(new_image):
+            print '<p><b>Error</b>, new_image "%s" file exists</p>' % (new_image, )
+        shutil.copyfile(old_image, new_image)
+
 
         trnscd_act_queue = []
         if write_queue(trnscd_act_queue, t_a_f_name) == -1:
@@ -901,7 +911,7 @@ def html_escape(text):
 def html_unescape(in_text):
     """convert html special characters back to text"""
 
-    if (not '&' in in_text) and (not '+' in in_text): # bypass string scan if unnecessary
+    if ('&' not in in_text) and ('+' not in in_text): # bypass string scan if unnecessary
         return in_text
 
     out_text = ''
@@ -1095,15 +1105,16 @@ def page_downloaded(p_dir):
 
         file_list = os.listdir(full_dir)
         for file_item in sorted(file_list):
-            file_name, file_ext = os.path.splitext(file_item)
+            file_prefix, file_ext = os.path.splitext(file_item)
             if file_ext in MEDIA_FILE_SUFFIXES:
                 file_stat = os.stat("%s/%s" % (full_dir, file_item, ))
                 print '    <tr>\n      <td align="center">',
-                file_name_jpg = "%s/%s.jpg" % (full_dir, file_name, )
+                file_name_jpg = "%s/%s.jpg" % (full_dir, file_prefix, )
                 if os.path.isfile(file_name_jpg):
-                    print '<img src="%s/%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_name, ),
+                    print '<img src="%s/%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_prefix, ),
                 else:
                     print '&nbsp;',
+                    #print '"%s"', % (file_name_jpg, )
                 print '</td>'
                 if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
                     if file_ext in JWPLAYABLE_SUFFIXES:
@@ -1648,9 +1659,9 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnsc
         for file_name in sorted(file_list):
             full_file_path = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
             file_prefix, file_ext = os.path.splitext(full_file_path)
-            file_prefix = file_prefix.replace('original', 'transcoded')
-            file_prefix = file_prefix.replace('default', 'transcoded')
-            file_prefix = file_prefix.replace('editorial', 'transcoded')
+            trnscd_prefix = file_prefix.replace('original', 'transcoded')
+            trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
+            trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
             file_stat = os.stat(full_file_path)
             #print 'Debug, considering file %s which has inode %d\n<br >' % (full_file_path, file_stat[stat.ST_INO], )
             if str(file_stat[stat.ST_INO]) == p_inode:
@@ -1660,17 +1671,26 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnsc
                     rezopts = ' -s %s' % (p_trnscd_rez, )
                     fnameadd = '-%s' % (p_trnscd_rez, )
 
-                cmd = "%s %s %s %s%s.%s 2>&1" % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), rezopts, full_file_path, file_prefix, fnameadd, TRANSCODE_COMMANDS[p_trnscd_cmd_method]['outext'], )
+                cmd = "%s %s %s %s%s.%s 2>&1" % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), rezopts, full_file_path, trnscd_prefix, fnameadd, TRANSCODE_COMMANDS[p_trnscd_cmd_method]['outext'], )
                 print 'file transcoding<pre>\n%s\n' % (cmd, )
                 sys.stdout.flush()
                 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0) # capture stdout
                 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0) # and stderr
                 sys_error = os.system(cmd)
+                print '</pre>'
                 if sys_error != 0:
                     print "<p><b>Error</b>, transcode returned error code %d</p>" % (sys_error, )
 
-                # FIXME! copy the picture if it exists
-                print '</pre>'
+                # copy the image if possible
+                old_image = '%s.jpg' % (file_prefix, )
+                new_image = '%s%s.jpg' % (trnscd_prefix, fnameadd, )
+                print '<p>Debug, copyfile "%s" "%s"</p>' % (old_image, new_image, )
+                if not os.path.isfile(old_image):
+                    print '<p><b>Error</b>, old_image "%s" file doesn\'t exist</p>' % (new_image, )
+                if os.path.isfile(new_image):
+                    print '<p><b>Error</b>, new_image "%s" file exists</p>' % (new_image, )
+                shutil.copyfile(old_image, new_image)
+
                 print '<p>Finished!</p>'
 
 
