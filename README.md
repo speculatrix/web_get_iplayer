@@ -151,7 +151,11 @@ which means you do everything in the browser.
 
 In order to transcode, you need to install the ffmpeg tool. Note that on
 openSuse you should install from the Packman repository because the default
-openSuse version is missing the AAC codec.
+openSuse version is missing the AAC codec. With Ubuntu, you may need to add
+"-strict -2" to the ts-to-mp4.sh script in order to enable the AAC codec,
+otherwise you'll see this error:
+<code>    [aac @ 0xc16a40] The encoder 'aac' is experimental but experimental codecs are not enabled, add '-strict -2' if you want to use it.</code>
+
 
 ## Known problems and shortcomings
 
