@@ -628,7 +628,8 @@ def cron_run_download():
 
         #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
         os.system(cmd)
-
+        if sys_error != 0:
+            print "Error, get_iplayer returned error code %d" % (sys_error, )
 
         # record when the download completed
         first_item['TT_finished'] = time.time()
@@ -775,7 +776,11 @@ def cron_run_transcode():
         # FIXME! the first letter of the program.
 
         #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
-        os.system(cmd)
+        sys_error = os.system(cmd)
+        if sys_error != 0:
+            print "Error, transcode returned error code %d" % (sys_error, )
+
+        # FIXME! copy the picture if it exists
 
         trnscd_act_queue = []
         if write_queue(trnscd_act_queue, t_a_f_name) == -1:
@@ -827,7 +832,8 @@ def delete_files_by_inode(inode_list, del_img_flag):
 #####################################################################################################################
 def find_file_inode_by_pid(p_pid):
     """this is used to find the inode of a file to uniquely identify it when freshly downloaded,
-    it only checks for files with a media file type, so ignores jpegs for example
+    it only checks for files with a media file type, so ignores jpegs for example.
+    returns non-zero if a file was found.
     FIXME! doesn't look in subdirectories.
     """
 
@@ -838,10 +844,10 @@ def find_file_inode_by_pid(p_pid):
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
     for file_name in file_list:
         file_prefix, file_ext = os.path.splitext(file_name)
-        print 'Debug, find_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, )
+        #print 'Debug, find_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, )
         if p_pid in file_prefix and file_ext in MEDIA_FILE_SUFFIXES:
             file_inode = os.stat(file_name).st_ino
-            print 'Debug, found inode %d' % (file_inode, )
+            print 'Debug, found inode %d for pid %s' % (file_inode, p_pid)
 
     return file_inode
 
@@ -1657,7 +1663,9 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnsc
                 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0) # capture stdout
                 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0) # and stderr
                 os.system(cmd)
-                # FIXME! capture error code and report it
+                if sys_error != 0:
+                    print "<p><b>Error</b>, transcode returned error code %d</p>" % (sys_error, )
+
                 # FIXME! copy the picture if it exists
                 print '</pre>'
                 print '<p>Finished!</p>'
@@ -1708,6 +1716,8 @@ def pid_to_download_link(p_pid, p_mediatype, p_title, p_subtitle):
 #####################################################################################################################
 def print_queue_as_html_table(q_data, queue_fields):
     """prints a queue as an html table, needs to know expected fields in QUEUE_FIELDS"""
+
+    # FIXME! add cancel function
 
     #print '=== %s ===<br />', (str(q_data), )
 
