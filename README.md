@@ -15,6 +15,9 @@ sudo zypper install python-odict
 ```
 
 * install an http server that supports `cgi-bin`, e.g. apache2
+```
+apt-get install apache2
+```
 
 * how to enable traditional cgi-bin behaviour in apache/httpd server for
   Debian or Ubuntu:
@@ -140,8 +143,10 @@ Optionally, also mount `/var/lib/web_get_iplayer` to get access to the iplayer l
 
 You should be able to play back the downloaded files with mplayer, vlc, ffplay etc.
 
-If you want to use the embedded player to play .flv files, you need JWplayer.
-In order to get this, you may need to register at www.jwplayer.com .
+If you want to play back video or audio tracks in the browser, you need
+JWPlayer, which can play FLV (flash video), mpeg4, or m4a (audio files).
+
+You will need a key in order to use JWPlayer, so register at www.jwplayer.com
 
 Usually, if you've registered correctly, the download page will be
 https://dashboard.jwplayer.com/#/welcome
@@ -151,7 +156,13 @@ Latest at: https://ssl.p.jwpcdn.com/player/download/jwplayer-7.12.8.zip
 Unpack the zip file into your htdocs directory, so it appears as
 http://example/jw-player-*version*/ and ensure the appropriate relative URI
 is put into the configuration (Flv7Uri) along with the licence key string.
+```
+cd /var/www/html/
+sudo wget https://ssl.p.jwpcdn.com/player/download/jwplayer-7.12.8.zip
+sudo unzip jwplayer-7.12.8.zip
+```
 
+### Trancoding
 
 You can transcode the TS (video) and M4A (audio) files into other formats
 to play on other devices; mp4 is a popular choice for video, mp3 for audio.
