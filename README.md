@@ -25,6 +25,21 @@ sudo ln -s ../mods-available/cgi.load
 sudo apachectl restart
 ```
 
+* enable web access to the place where downloaded videos are put, e.g. to /home/iplayer
+this is done by editing the default apache vhost configuration, e.g. /etc/apache2/sites-available/000-default.conf
+and adding these lines:
+```
+        Alias /iplayer  "/home/iplayer"
+        <Directory      "/home/iplayer">
+                Options         FollowSymLinks Indexes
+                AllowOverride   None
+                Allow From      All
+                Require all     granted
+        </Directory>
+```
+and then reloading the apache configuration with apache2ctl graceful
+
+
 * download the get_iplayer program from
   `https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer`
   and put it into the `cgi-bin` directory and make executable, and install
