@@ -16,28 +16,45 @@ if [ "$INFILE" == "" ] ; then
 fi
 
 if [ "$2" == "" ] ; then
-	echo "no output file given"
+	OUTFILE=`echo $INFILE | sed 's/ts$/mp4/g'`
+	echo "Info, output file name $OUTFILE was derived from input file name"
+else
+	OUTFILE="$2"
+fi
+
+if [ "$OUTFILE" == "" ] ; then
+	echo "Error, OUTFILE blank"
 	exit 1
 fi
 
-if [ ! -f "$1" ] ; then
-	echo "input file doesn't exist"
+if [ "$INFILE" == "$OUTFILE" ] ; then
+	echo "Error, INFILE '$INFILE' same as OUTFILE '$OUTFILE'"
 	exit 1
 fi
 
-if [ -f "$2" ] ; then
-	echo "output file already exists"
+if [ ! -f "$INFILE" ] ; then
+	echo "Error, input file doesn't exist"
 	exit 1
 fi
+
+if [ -f "$OUTFILE" ] ; then
+	echo "Error, output file already exists"
+	exit 1
+fi
+
 
 if [ "$scale" == "" ] ; then
-	errcode = time nice ffmpeg -loglevel warning -i "$INFILE"		-c:a copy -c:v copy		$2
+	time nice ffmpeg -loglevel warning -i "$INFILE"		-c:a copy -c:v copy		"$OUTFILE"
+	errcode=$?
 else
-	errcode = time nice ffmpeg -loglevel warning -i "$INFILE" $scale	-c:v libx264 -profile:v baseline $2
+	time nice ffmpeg -loglevel warning -i "$INFILE" $scale	-c:v libx264 -profile:v baseline "$OUTFILE"
+	errcode=$?
 fi
 
 if [ $errcode -ne 0 ] ; then
 	echo "ffmpeg returned error code $errcode"
 fi
 
-return errcode
+exit $errcode
+
+# end ts-to-mp4.sh
