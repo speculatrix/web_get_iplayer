@@ -630,7 +630,7 @@ def cron_run_download():
         # FIXME! the first letter of the program.
 
         #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
-        os.system(cmd)
+        sys_error = os.system(cmd)
         if sys_error != 0:
             print "Error, get_iplayer returned error code %d" % (sys_error, )
 
@@ -1665,7 +1665,7 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnsc
                 sys.stdout.flush()
                 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0) # capture stdout
                 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0) # and stderr
-                os.system(cmd)
+                sys_error = os.system(cmd)
                 if sys_error != 0:
                     print "<p><b>Error</b>, transcode returned error code %d</p>" % (sys_error, )
 
