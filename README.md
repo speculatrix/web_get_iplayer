@@ -9,6 +9,11 @@ a python wrapper to provide a web interface to get_iplayer
 sudo apt-get install python
 ```
 
+on OpenSuse, you need to install python-odict for ordered dictionaries:
+```
+sudo zypper install python-odict
+```
+
 * install an http server that supports `cgi-bin`, e.g. apache2
 
 * how to enable traditional cgi-bin behaviour in apache/httpd server for
