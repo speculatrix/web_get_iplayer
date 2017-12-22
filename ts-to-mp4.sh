@@ -29,8 +29,9 @@ if [ -f "$2" ] ; then
 fi
 
 if [ "$scale" == "" ] ; then
-	time nice ffmpeg -loglevel warning -i $1		-c:a copy -c:v copy		$2
+	errcode = time nice ffmpeg -loglevel warning -i $1		-c:a copy -c:v copy		$2
 else
-	time nice ffmpeg -loglevel warning -i $1 $scale	-c:v libx264 -profile:v baseline	$2
+	errcode = time nice ffmpeg -loglevel warning -i $1 $scale	-c:v libx264 -profile:v baseline	$2
 fi
 
+return errcode
