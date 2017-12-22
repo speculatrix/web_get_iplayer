@@ -99,11 +99,11 @@ SETTINGS_DEFAULTS = { 'base_url'            : '/iplayer'                        
                       'quality_video'       : 'best,hlshd,hlsvhigh,hlsstd'      , # decreasing priority
                       'trnscd_cmd_audio'    : '/usr/local/bin/m4a-to-mp3.sh'    , # this command is passed two args input & output
                       'trnscd_cmd_video'    : '/usr/local/bin/ts-to-mp4.sh'     , # this command is passed two args input & output
-                      'Flv5Enable'          : '1'                               , # whether to show the JWplayer 7 column
+                      'Flv5Enable'          : '0'                               , # whether to show the JWplayer 7 column
                       'Flv5Uri'             : '/jwmediaplayer-5.8'              , # URI where the JW "longtail" JW5 player was unpacked
                       'Flv5UriSWF'          : '/player.swf'                     , # the swf of the JW5 player
                       'Flv5UriJS'           : '/swfobject.js'                   , # the jscript of the JW5 player
-                      'Flv6Enable'          : '1'                               , # whether to show the JWplayer 7 column
+                      'Flv6Enable'          : '0'                               , # whether to show the JWplayer 7 column
                       'Flv5Key'             : ''                                , # JW Player 5 Key, leave blank if you don't have one
                       'Flv6Uri'             : '/jwplayer-6-11'                  , # URI where the JW "longtail" JW6 player was unpacked
                       'Flv6UriJS'           : '/jwplayer.js'                    , # the jscript of the JW6 player
@@ -140,7 +140,6 @@ JWPLAYABLE_SUFFIXES = [ '.flv',
                         '.m4a',
                         '.mp4',
                       ]
-TRANSCODE_METHODS = [ 'trnscd_cmd_audio', 'trnscd_cmd_video', ]
 
 # it seems everybody has the same API key, so we'll use a very common USer AGent string to not draw attention to ourselves
 USAG    = 'BBCiPlayer/4.4.0.235 (Nexus5; Android 4.4.4)'
@@ -834,7 +833,7 @@ def find_file_inode_by_pid(p_pid):
 
     file_inode = 0
 
-    print 'Debug, find_file_inode_by_pid pid "%s"' % (pid, )
+    print 'Debug, find_file_inode_by_pid pid "%s"' % (p_pid, )
 
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
     for file_name in file_list:
@@ -853,7 +852,7 @@ def find_file_name_by_inode(inode):
     FIXME! doesn't look in subdirectories.
     """
 
-    print 'Debug, find_file_name_by_inode inode "%s"' % (p_inode, )
+    print 'Debug, find_file_name_by_inode inode "%s"' % (inode, )
 
     file_wanted = ''
 
@@ -1658,6 +1657,8 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnsc
                 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0) # capture stdout
                 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0) # and stderr
                 os.system(cmd)
+                # FIXME! capture error code and report it
+                # FIXME! copy the picture if it exists
                 print '</pre>'
                 print '<p>Finished!</p>'
 
@@ -1732,7 +1733,7 @@ def print_queue_as_html_table(q_data, queue_fields):
 
                 if key == 'inode':
                     print '\t\t<td align="center">'
-                    if ('inode' in q_data[i] and q_data[i]['inode'] != ''):
+                    if 'inode' in q_data[i] and q_data[i]['inode'] != '':
                         print '<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], )
                 elif key == 'pid':
                     print '\t\t<td align="center">%s<br />' % (elem, )
@@ -2131,7 +2132,7 @@ table td, table th {
         if 'trnscd_cmd_method' in CGI_PARAMS:
             p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
             # check that user provided known transcode method
-            if p_trnscd_cmd_method != '' and (p_trnscd_cmd_method not in TRANSCODE_METHODS):
+            if p_trnscd_cmd_method != '' and (p_trnscd_cmd_method not in TRANSCODE_COMMANDS):
                 print 'p_trnscd_cmd_method is illegal'
                 illegal_param_count += 1
 
