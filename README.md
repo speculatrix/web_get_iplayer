@@ -34,7 +34,7 @@ sudo apachectl restart
 cd /usr/lib/cgi-bin/
 sudo wget https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
 sudo chmod ugo+x get_iplayer
-sudo apt-get install libcgi-pm-perl libhtml-html5-entities-perl libhtml-entities-numbered-perl libhtml-html5-parser-perlg
+sudo apt-get install libcgi-pm-perl libhtml-html5-entities-perl libhtml-entities-numbered-perl libhtml-html5-parser-perl
 ```
 
 * (optional) get the JW Player if you wish to be able to play FLV
@@ -141,13 +141,17 @@ is put into the configuration (Flv7Uri) along with the licence key string.
 You can transcode the TS (video) and M4A (audio) files into other formats
 to play on other devices; mp4 is a popular choice for video, mp3 for audio.
 The UI offers this possibility, whereby it calls a transcode command.
-Some useful scripts are provided for doing this, ts-to-mp4.sh and m4a-to-mp3.sh
-download them and make them executable. A good place to put them is /usr/local/bin,
-but you can configure their locations in the settings.
+Some useful scripts are provided for doing this, ts-to-mp4.sh and
+m4a-to-mp3.sh . Download them and make them executable. A good place to put
+them is /usr/local/bin, but you can configure their locations in the settings.
 
 If you install the JWPlayer, then it can play .flv and .mp4 video files,
 but also luckily .m4a audio files, without them needing to be transcoded,
 which means you do everything in the browser.
+
+In order to transcode, you need to install the ffmpeg tool. Note that on
+openSuse you should install from the Packman repository because the default
+openSuse version is missing the AAC codec.
 
 ## Known problems and shortcomings
 
