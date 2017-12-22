@@ -646,7 +646,7 @@ def cron_run_download():
         else:
             print 'Success, written empty active file'
 
-        # attempt to node number of the downloaded file
+        # attempt to get node number of the downloaded file
         # as this makes it much easier to track if we end up
         # with multiple items having transcoded it
         first_item['inode'] = find_file_inode_by_pid(first_item['pid'])
@@ -666,7 +666,6 @@ def cron_run_download():
         if 'trnscd_cmd_method' in first_item and first_item['trnscd_cmd_method'] != '':
             print 'Info, trnscd_cmd_method was set, adding item to transcode queue'
             # FIXME! check that the queue doesn't already contain an identical task
-            # FIXME! need to know what the name of the downloaded file was!
             trnscd_item = { 'inode'             : first_item['inode'],
                             'pid'               : first_item['pid'],
                             'title'             : first_item['title'],
@@ -700,7 +699,7 @@ def cron_run_transcode():
         if tai == -1:
             print 'Info, cron job, couldn\'t read trancode active file'
     else:
-        print 'Info, transcode actve queue hasn\'t been created'
+        print 'Info, transcode active queue hasn\'t been created'
 
     # FIXME! allow parallel transcodes
     if len(trnscd_act_queue) > 0:
@@ -747,66 +746,69 @@ def cron_run_transcode():
 
         # break the file up into parts, create a new file name according to
         # how we transcode it, and generate a command to transcode
-        orig_file = find_file_name_by_inode(first_item['inode'])
-        file_prefix, file_ext = os.path.splitext(orig_file)
-        trnscd_prefix = file_prefix.replace('original', 'transcoded')
-        trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
-        trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
-        cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
-        rezopts = ''
-        fnameadd = ''
-        if 'trnscd_rez' in first_item and first_item['trnscd_rez'] != '':
-            if first_item['trnscd_rez'] == '' or first_item['trnscd_rez'] != 'original':
-                rezopts = ' -s %s' % (first_item['trnscd_rez'], )
-                fnameadd = '-%s' % (first_item['trnscd_rez'], )
-        cmd = "%s %s %s %s%s.%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, trnscd_prefix, fnameadd, TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'], )
+        orig_file = find_file_name_by_inode(int(first_item['inode']))
+        if orig_file == "":
+            print 'Error, failed to find file whose inode is %s' % (first_item['inode'], )
+        else:
+            file_prefix, file_ext = os.path.splitext(orig_file)
+            trnscd_prefix = file_prefix.replace('original', 'transcoded')
+            trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
+            trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
+            cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
+            rezopts = ''
+            fnameadd = ''
+            if 'trnscd_rez' in first_item and first_item['trnscd_rez'] != '':
+                if first_item['trnscd_rez'] == '' or first_item['trnscd_rez'] != 'original':
+                    rezopts = ' -s %s' % (first_item['trnscd_rez'], )
+                    fnameadd = '-%s' % (first_item['trnscd_rez'], )
+            cmd = "%s %s %s %s%s.%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, trnscd_prefix, fnameadd, TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'], )
 
-        log_dir = os.path.join(CONTROL_DIR, 'logs')
-        if not os.path.isdir(log_dir):
-            print 'Info, CONTROL_DIR %s, need to make directory %s' % (CONTROL_DIR, log_dir, )
-            os.mkdir(log_dir)
-            #os.lchmod(log_dir, 0775)
-        log_file = os.path.join(log_dir, first_item['pid'],)
+            log_dir = os.path.join(CONTROL_DIR, 'logs')
+            if not os.path.isdir(log_dir):
+                print 'Info, CONTROL_DIR %s, need to make directory %s' % (CONTROL_DIR, log_dir, )
+                os.mkdir(log_dir)
+                #os.lchmod(log_dir, 0775)
+            log_file = os.path.join(log_dir, first_item['pid'],)
 
-        # redirect output
-        cmd = cmd + ' >> ' + log_file + ' 2>&1'
-
-
-        #if dbg_level > 0:
-        print 'calling shell to do %s' % (cmd, )
-        os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
-
-        # FIXME! set the directory to a subdirectory matching
-        # FIXME! the first letter of the program.
-
-        #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
-        sys_error = os.system(cmd)
-        if sys_error != 0:
-            print "Error, transcode returned error code %d" % (sys_error, )
-
-        # copy the image if possible
-        old_image = '%s.jpg' % (file_prefix, )
-        new_image = '%s%s.jpg' % (trnscd_prefix, fnameadd, )
-        print '<p>Debug, copyfile "%s" "%s"</p>' % (old_image, new_image, )
-        if not os.path.isfile(old_image):
-            print '<p><b>Error</b>, old_image "%s" file doesn\'t exist</p>' % (new_image, )
-        if os.path.isfile(new_image):
-            print '<p><b>Error</b>, new_image "%s" file exists</p>' % (new_image, )
-        shutil.copyfile(old_image, new_image)
+            # redirect output
+            cmd = cmd + ' >> ' + log_file + ' 2>&1'
 
 
-        trnscd_act_queue = []
-        if write_queue(trnscd_act_queue, t_a_f_name) == -1:
-            print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
+            #if dbg_level > 0:
+            print 'calling shell to do %s' % (cmd, )
+            os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
-        first_item['TT_finished'] = time.time()
-        trnscd_rec_queue.append(first_item)
-        # shorten recent queue to max allowed in settings
-        while len(trnscd_rec_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
-            print 'removing oldest item from transcode recent items queue'
-            trnscd_rec_queue.pop(0)
-        if write_queue(trnscd_rec_queue, t_r_f_name) == -1:
-            print 'Error, failed writing transcode recents list to file %s' % (t_r_f_name, )
+            # FIXME! set the directory to a subdirectory matching
+            # FIXME! the first letter of the program.
+
+            #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
+            sys_error = os.system(cmd)
+            if sys_error != 0:
+                print "Error, transcode returned error code %d" % (sys_error, )
+
+            # copy the image if possible
+            old_image = '%s.jpg' % (file_prefix, )
+            new_image = '%s%s.jpg' % (trnscd_prefix, fnameadd, )
+            print '<p>Debug, copyfile "%s" "%s"</p>' % (old_image, new_image, )
+            if not os.path.isfile(old_image):
+                print '<p><b>Error</b>, old_image "%s" file doesn\'t exist</p>' % (new_image, )
+            if os.path.isfile(new_image):
+                print '<p><b>Error</b>, new_image "%s" file exists</p>' % (new_image, )
+            shutil.copyfile(old_image, new_image)
+
+
+            trnscd_act_queue = []
+            if write_queue(trnscd_act_queue, t_a_f_name) == -1:
+                print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
+
+            first_item['TT_finished'] = time.time()
+            trnscd_rec_queue.append(first_item)
+            # shorten recent queue to max allowed in settings
+            while len(trnscd_rec_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
+                print 'removing oldest item from transcode recent items queue'
+                trnscd_rec_queue.pop(0)
+            if write_queue(trnscd_rec_queue, t_r_f_name) == -1:
+                print 'Error, failed writing transcode recents list to file %s' % (t_r_f_name, )
 
 
 #####################################################################################################################
@@ -877,7 +879,8 @@ def find_file_name_by_inode(inode):
 
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
     for file_name in file_list:
-        if inode == os.stat(file_name).st_ino:
+        full_file_path = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
+        if inode == os.stat(full_file_path).st_ino:
             print 'Debug, found file %s' % (file_name, )
             file_wanted = file_name
 
@@ -1636,63 +1639,71 @@ def page_settings():
 
 
 #####################################################################################################################
-def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnscd_cmd_method, p_trnscd_rez):
+def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_subtitle, p_trnscd_cmd_method, p_trnscd_rez):
     """scan the downloaded list of files and transcode any whose inode matches
     one in the list"""
 
-    print 'transcoding files with inode %s\n<br />' % (p_inode, )
+    decoded_title = ''
+    if p_title != '':
+        decoded_title = base64.b64decode(p_title)
+    decoded_subtitle = ''
+    if p_subtitle != '':
+        decoded_subtitle = base64.b64decode(p_subtitle)
+
+    print '''<table><td>PID</td><td>%s</td></tr>
+<tr><td>Title</td><td>%s</td></tr>
+<tr><td>Subtitle</td><td>%s</td></tr>
+''' % (p_pid, decoded_title, decoded_subtitle, )
 
     if p_submit == '' or p_submit != 'Transcode' or p_trnscd_cmd_method == '':
-        print '<p>Confirm transcode options:</p>'
+        print '<tr><td>Transcode method:</td><td>'
         print '<form method="get" action="">'
         print_select_transcode_method(p_trnscd_cmd_method)
-        print '<br />'
+        print '</tr>\n<tr><td>Output resolution (if video)</td><td>'
         print_select_resolution(p_trnscd_rez)
-        print '<br />'
+        print '</td></tr><tr><td>&nbsp;</td><td>'
 
-        print '<input type="hidden" name="inode" value="%s">' % (p_inode, )
+        print '<input type="hidden" name="inode" value="%s">'       % (p_inode, )
+        print '<input type="hidden" name="pid" value="%s">'         % (p_pid, )
+        print '<input type="hidden" name="mediatype" value="%s">'   % (p_mediatype, )
+        print '<input type="hidden" name="title" value="%s">'       % (p_title, )
+        print '<input type="hidden" name="subtitle" value="%s">'    % (p_subtitle, )
         print '<input type="hidden" name="page" value="transcode_inode">'
         print '<input type="submit" name="submit" value="Transcode">'
         print '</form>'
+        print '</table>'
+        print '</td></tr>\n</table>'
     else:
-        file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
-        for file_name in sorted(file_list):
-            full_file_path = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
-            file_prefix, file_ext = os.path.splitext(full_file_path)
-            trnscd_prefix = file_prefix.replace('original', 'transcoded')
-            trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
-            trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
-            file_stat = os.stat(full_file_path)
-            #print 'Debug, considering file %s which has inode %d\n<br >' % (full_file_path, file_stat[stat.ST_INO], )
-            if str(file_stat[stat.ST_INO]) == p_inode:
-                rezopts = ''
-                fnameadd = ''
-                if p_trnscd_rez != '' and p_trnscd_rez != 'original':
-                    rezopts = ' -s %s' % (p_trnscd_rez, )
-                    fnameadd = '-%s' % (p_trnscd_rez, )
+        # load transcode submission queue
+        trnscd_sub_queue = []
+        tsi = 0         # count transcode submissions, -1 if queue couldn't be read
+        t_s_f_name = os.path.join(CONTROL_DIR, TRNSCDE_SUB_QUEUE)
+        if os.path.isfile(t_s_f_name):
+            tsi = read_queue(trnscd_sub_queue, t_s_f_name)
+            if tsi == -1:
+                print 'Info, cron job, couldn\'t read trancode submission file'
+        else:
+            print 'Info, transcode submission queue hasn\'t been created'
 
-                cmd = "%s %s %s %s%s.%s 2>&1" % (my_settings.get(SETTINGS_SECTION, p_trnscd_cmd_method), rezopts, full_file_path, trnscd_prefix, fnameadd, TRANSCODE_COMMANDS[p_trnscd_cmd_method]['outext'], )
-                print 'file transcoding<pre>\n%s\n' % (cmd, )
-                sys.stdout.flush()
-                sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0) # capture stdout
-                sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0) # and stderr
-                sys_error = os.system(cmd)
-                print '</pre>'
-                if sys_error != 0:
-                    print "<p><b>Error</b>, transcode returned error code %d</p>" % (sys_error, )
 
-                # copy the image if possible
-                old_image = '%s.jpg' % (file_prefix, )
-                new_image = '%s%s.jpg' % (trnscd_prefix, fnameadd, )
-                print '<p>Debug, copyfile "%s" "%s"</p>' % (old_image, new_image, )
-                if not os.path.isfile(old_image):
-                    print '<p><b>Error</b>, old_image "%s" file doesn\'t exist</p>' % (new_image, )
-                if os.path.isfile(new_image):
-                    print '<p><b>Error</b>, new_image "%s" file exists</p>' % (new_image, )
-                shutil.copyfile(old_image, new_image)
-
-                print '<p>Finished!</p>'
-
+        # if transcode was requested, append to queue
+        trnscd_item = { 'inode'             : p_inode,
+                        'pid'               : p_pid,
+                        'title'             : p_title,
+                        'subtitle'          : p_subtitle,
+                        'mediatype'         : p_mediatype,
+                        'trnscd_cmd_method' : p_trnscd_cmd_method,
+                        'trnscd_rez'        : p_trnscd_rez,
+                        'TT_submitted'      : time.time(),
+                        'TT_started'        : '',
+                        'TT_finished'       : '',
+                      }
+        # append to transcode submissions
+        trnscd_sub_queue.append(trnscd_item)
+        if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
+            print '<p><b>Error</b>, failed to write transcode submission queue</p>'
+        else:
+            print '<p><b>Success</b>, written transcode submission queue</p>'
 
 
 
@@ -1767,7 +1778,7 @@ def print_queue_as_html_table(q_data, queue_fields):
                 if key == 'inode':
                     print '\t\t<td align="center">'
                     if 'inode' in q_data[i] and q_data[i]['inode'] != '':
-                        print '<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], )
+                        print '<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s&subtitle=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'], )
                 elif key == 'pid':
                     print '\t\t<td align="center">%s<br />' % (elem, )
                     if elem != '':
@@ -2220,7 +2231,7 @@ table td, table th {
                 page_settings()
 
             if p_page == 'transcode_inode':
-                page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_trnscd_cmd_method, p_trnscd_rez)
+                page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_subtitle, p_trnscd_cmd_method, p_trnscd_rez)
 
             if p_page == 'upgrade_check':
                 page_upgrade_check()
