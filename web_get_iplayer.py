@@ -195,6 +195,7 @@ QUEUE_FIELDS    = [ 'inode', 'pid', 'title', 'subtitle',
                     'mediatype', 'quality', 'force',
                     'trnscd_cmd_method', 'trnscd_rez',
                     'TT_submitted', 'TT_started', 'TT_finished',
+                    'status',
                   ]
 
 SUBMIT_QUEUE    = 'submit.txt'  # where the web page submits/enqueues
@@ -205,6 +206,7 @@ RECENT_ITEMS    = 'recent.txt'  # recently downloaded
 TRNSCD_QUE_FIELDS   = [ 'inode', 'pid', 'title', 'subtitle', 'mediatype',
                         'trnscd_cmd_method', 'trnscd_rez',
                         'TT_submitted', 'TT_started', 'TT_finished',
+                        'status',
                       ]
 
 TRNSCDE_SUB_QUEUE    = 'transcode_submit.txt'  # submit queue for transcoding
@@ -592,6 +594,7 @@ def cron_run_download():
     if len(first_item) > 0:
     #if first_item:
         print 'Info, will start downloading %s' % (str(first_item), )
+        first_item['status'] = 'attempting download'
 
         log_dir = os.path.join(CONTROL_DIR, 'logs')
         if not os.path.isdir(log_dir):
@@ -634,6 +637,9 @@ def cron_run_download():
         sys_error = os.system(cmd)
         if sys_error != 0:
             print "Error, get_iplayer returned error code %d" % (sys_error, )
+            first_item['status'] = 'execution of get_iplayer failed with error %d' % (sys_error, )
+        else:
+            first_item['status'] = 'download probably successful'
 
         # record when the download completed
         first_item['TT_finished'] = time.time()
@@ -676,6 +682,7 @@ def cron_run_download():
                             'TT_submitted'      : time.time(),
                             'TT_started'        : '',
                             'TT_finished'       : '',
+                            'status'            : '',
                           }
             trnscd_sub_queue.append(trnscd_item)
             if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
@@ -749,7 +756,9 @@ def cron_run_transcode():
         orig_file = find_file_name_by_inode(int(first_item['inode']))
         if orig_file == "":
             print 'Error, failed to find file whose inode is %s' % (first_item['inode'], )
+            first_item['status'] = 'failed to find file'
         else:
+            first_item['status'] = 'attempting transcode'
             file_prefix, file_ext = os.path.splitext(orig_file)
             trnscd_prefix = file_prefix.replace('original', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
@@ -785,6 +794,9 @@ def cron_run_transcode():
             sys_error = os.system(cmd)
             if sys_error != 0:
                 print "Error, transcode returned error code %d" % (sys_error, )
+                first_item['status'] = 'execution of transcode script failed with error %d' % (sys_error, )
+            else:
+                first_item['status'] = 'transcode probably successful'
 
             # copy the image if possible
             old_image = '%s.jpg' % (file_prefix, )
@@ -797,18 +809,18 @@ def cron_run_transcode():
             shutil.copyfile(old_image, new_image)
 
 
-            trnscd_act_queue = []
-            if write_queue(trnscd_act_queue, t_a_f_name) == -1:
-                print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
+        trnscd_act_queue = []
+        if write_queue(trnscd_act_queue, t_a_f_name) == -1:
+            print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
 
-            first_item['TT_finished'] = time.time()
-            trnscd_rec_queue.append(first_item)
-            # shorten recent queue to max allowed in settings
-            while len(trnscd_rec_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
-                print 'removing oldest item from transcode recent items queue'
-                trnscd_rec_queue.pop(0)
-            if write_queue(trnscd_rec_queue, t_r_f_name) == -1:
-                print 'Error, failed writing transcode recents list to file %s' % (t_r_f_name, )
+        first_item['TT_finished'] = time.time()
+        trnscd_rec_queue.append(first_item)
+        # shorten recent queue to max allowed in settings
+        while len(trnscd_rec_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
+            print 'removing oldest item from transcode recent items queue'
+            trnscd_rec_queue.pop(0)
+        if write_queue(trnscd_rec_queue, t_r_f_name) == -1:
+            print 'Error, failed writing transcode recents list to file %s' % (t_r_f_name, )
 
 
 #####################################################################################################################
@@ -1758,7 +1770,7 @@ def print_queue_as_html_table(q_data, queue_fields):
     #if q_data:
     if len(q_data) > 0:
         i = 0
-        print '<table>'
+        print '  <table width="100%" >\n'
         print '\t<tr>'
         for key in queue_fields:
             if key[:3] == 'TT_':
