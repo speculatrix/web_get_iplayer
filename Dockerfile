@@ -1,4 +1,4 @@
-FROM debian:wheezy
+FROM debian:jessie
 MAINTAINER Christian Ashby <docker@cashby.me.uk>
 # Install OS package prerequisites and configure apache
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
