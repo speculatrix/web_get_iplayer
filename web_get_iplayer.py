@@ -759,7 +759,7 @@ def cron_run_transcode():
             first_item['status'] = 'failed to find file'
         else:
             first_item['status'] = 'attempting transcode'
-            file_prefix, file_ext = os.path.splitext(orig_file)
+            file_prefix, _file_ext = os.path.splitext(orig_file)
             trnscd_prefix = file_prefix.replace('original', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
@@ -1293,10 +1293,40 @@ def page_popular():
 
 
 #####################################################################################################################
-def page_queues(p_pid):
+def page_queues(p_pid, p_delete_pid, p_delete_queue):
     """this shows the current state of queues, and prints a log file that matches the p_pid"""
 
-    print '<h3>current state of queues and logs</h3>'
+    if p_delete_pid != '' and p_delete_queue != '':
+        print '<h3>Attempting to remove pid %s from queue %s</h3>\n<p>' % (p_delete_pid, p_delete_queue)
+        if p_delete_queue == SUBMIT_QUEUE or p_delete_queue == PENDING_QUEUE or p_delete_queue == TRNSCDE_SUB_QUEUE:
+            quefile = os.path.join(CONTROL_DIR, p_delete_queue)
+            queue = []
+            if os.path.isfile(quefile):
+                queue_count = read_queue(queue, quefile)    # count queue entries, -1 if queue couldn't be read
+                if queue_count == -1:
+                    print '<b>Error</b>, failed reading file'
+                elif len(queue) == 0:
+                    print '<b>Error</b>, queue is empty'
+                else:
+                    for idx in range(0, len(queue)):
+                        if queue[idx]['pid'] == p_delete_pid:
+                            del queue[idx]
+                            if write_queue(queue, quefile) == -1:
+                                print '<p><b>Error</b>, failed to write queue file</p>'
+                            else:
+                                print '<p><b>Success</b>, written queue file</p>'
+
+                        else:
+                            print 'item at position %d doesn\'t have matching pid %s<br />' (idx, queue[idx]['pid'], )
+            else:
+                print '<b>Error</b>, queue file hasn\'t been created'
+
+            # delete entry where pid is blah
+            # save queue file
+        print '</p><hr width="50%" />'
+
+
+    print '<h3>Current State of Queues And Logs</h3>'
 
     ## active queue ##
     print 'active queue:<ol>'
@@ -1310,7 +1340,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue, QUEUE_FIELDS)
+            print_queue_as_html_table(queue, QUEUE_FIELDS, False, ACTIVE_QUEUE)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1328,7 +1358,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue, QUEUE_FIELDS)
+            print_queue_as_html_table(queue, QUEUE_FIELDS, True, SUBMIT_QUEUE)
     else:
         print 'hasn\'t been created'
     print '</ol>\n<br />'
@@ -1346,7 +1376,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue, QUEUE_FIELDS)
+            print_queue_as_html_table(queue, QUEUE_FIELDS, True, PENDING_QUEUE)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1363,7 +1393,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue, QUEUE_FIELDS)
+            print_queue_as_html_table(queue, QUEUE_FIELDS, False, RECENT_ITEMS)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1381,7 +1411,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS)
+            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS, False, TRNSCDE_ACT_QUEUE)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1397,7 +1427,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS)
+            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS, True, TRNSCDE_SUB_QUEUE)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1414,7 +1444,7 @@ def page_queues(p_pid):
         #elif queue:
             print 'empty'
         else:
-            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS)
+            print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS, False, TRNSCDE_REC_QUEUE)
     else:
         print 'hasn\'t been created'
     print '</ol><br />'
@@ -1495,7 +1525,7 @@ def page_search_audio(p_sought):
             print '<pre>=== full json dump of search result ==='
             #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
             print json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '</pre><br/>'
+            print '</pre><br />'
             print '      </td>\n    </tr>'
 
         if len(program_data):
@@ -1554,7 +1584,7 @@ def page_search_video(p_sought):
                 print '<pre>=== full json dump of search result ==='
                 #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
                 print json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )
-                print '</pre><br/>'
+                print '</pre><br />'
             print '      </td>\n    </tr>'
 
         if len(program_data):
@@ -1760,14 +1790,9 @@ def pid_to_download_link(p_pid, p_mediatype, p_title, p_subtitle):
 
 
 #####################################################################################################################
-def print_queue_as_html_table(q_data, queue_fields):
+def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
     """prints a queue as an html table, needs to know expected fields in QUEUE_FIELDS"""
 
-    # FIXME! add cancel function
-
-    #print '=== %s ===<br />', (str(q_data), )
-
-    #if q_data:
     if len(q_data) > 0:
         i = 0
         print '  <table width="100%" >\n'
@@ -1790,10 +1815,12 @@ def print_queue_as_html_table(q_data, queue_fields):
                 if key == 'inode':
                     print '\t\t<td align="center">'
                     if 'inode' in q_data[i] and q_data[i]['inode'] != '':
-                        print '<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s&subtitle=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'], )
+                        print '%d<br />\n<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s&subtitle=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'], )
                 elif key == 'pid':
                     print '\t\t<td align="center">%s<br />' % (elem, )
                     if elem != '':
+                        if show_delete:
+                            print '<a href="?page=queues&delete_pid=%s&delete_queue=%s">de-queue</a><br />\n' % (elem, queue_file, )
                         print '<a href="?page=queues&pid=%s">show log</a><br />\n' % (elem, )
                         print '<a href="?page=download&pid=%s&mediatype=%s&title=%s&subtitle=%s">redownload</a><br />\n' % (q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'],)
                     else:
@@ -2086,7 +2113,7 @@ table td, table th {
         dbg_level = int(CGI_PARAMS.getvalue("dbg_level"))
 
     if dbg_level > 0:
-        print 'Python errors at <a href="/python_errors" target="_new">/python_errors (new window)</a><br />'
+        print 'Python errors at <a href="/python_errors/?C=M;O=A" target="_new">/python_errors (new window)</a><br />'
 
 
     print '<pre>'
@@ -2126,6 +2153,21 @@ table td, table th {
             #if len(inode_list):
             if inode_list:
                 delete_files_by_inode(inode_list, del_img_flag)
+
+        p_delete_queue = ''
+        if 'delete_queue' in CGI_PARAMS:
+            p_delete_queue = CGI_PARAMS.getvalue('delete_queue')
+            if not bool(re.compile('^[0-9A-Za-z.]+\\Z').match(p_delete_queue)):
+                print 'p_delete_queue is illegal\n'
+                illegal_param_count += 1
+
+        p_delete_pid = ''
+        if 'delete_pid' in CGI_PARAMS:
+            p_delete_pid = CGI_PARAMS.getvalue('delete_pid')
+            if not bool(re.compile('^[0-9A-Za-z.]+\\Z').match(p_delete_pid)):
+                print 'p_delete_pid is illegal\n'
+                illegal_param_count += 1
+
 
         p_dir = ''
         if 'dir' in CGI_PARAMS:
@@ -2234,7 +2276,7 @@ table td, table th {
                 page_popular()
 
             if p_page == 'queues':
-                page_queues(p_pid)
+                page_queues(p_pid, p_delete_pid, p_delete_queue)
 
             if p_page == 'search':
                 page_search(p_mediatype, p_sought)
