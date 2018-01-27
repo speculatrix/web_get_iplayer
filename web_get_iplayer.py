@@ -76,7 +76,7 @@ dbg_level = 0   # default value no debug
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
 # this is hopefully the only thing you ever need to change
 #DOCROOT_DEFAULT   = '/var/www/html'
-DOCROOT_DEFAULT   = '/var/www/public/htdocs'
+DOCROOT_DEFAULT   = '/var/www/iplayer/htdocs'
 
 # state files, queues, logs and so on are stored in this directory
 CONTROL_DIR       = '/var/lib/web_get_iplayer'
@@ -143,6 +143,7 @@ MEDIA_FILE_SUFFIXES = [ '.avi',
 JWPLAYABLE_SUFFIXES = [ '.flv',
                         '.m4a',
                         '.mp4',
+                        '.mp3',
                       ]
 
 # it seems everybody has the same API key, so we'll use a very common USer AGent string to not draw attention to ourselves
@@ -682,7 +683,7 @@ def cron_run_download():
                             'TT_submitted'      : time.time(),
                             'TT_started'        : '',
                             'TT_finished'       : '',
-                            'status'            : '',
+                            'status'            : 'queued',
                           }
             trnscd_sub_queue.append(trnscd_item)
             if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
@@ -760,7 +761,8 @@ def cron_run_transcode():
         else:
             first_item['status'] = 'attempting transcode'
             file_prefix, _file_ext = os.path.splitext(orig_file)
-            trnscd_prefix = file_prefix.replace('original', 'transcoded')
+            trnscd_prefix = file_prefix.replace('original.raw', 'transcoded')
+            trnscd_prefix = trnscd_prefix.replace('original', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
             cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
@@ -801,12 +803,18 @@ def cron_run_transcode():
             # copy the image if possible
             old_image = '%s.jpg' % (file_prefix, )
             new_image = '%s%s.jpg' % (trnscd_prefix, fnameadd, )
-            print '<p>Debug, copyfile "%s" "%s"</p>' % (old_image, new_image, )
+            print 'Debug, trnscd_prefix %s, fnameadd %s, copyfile "%s" "%s"' % (trnscd_prefix, fnameadd, old_image, new_image, )
             if not os.path.isfile(old_image):
-                print '<p><b>Error</b>, old_image "%s" file doesn\'t exist</p>' % (new_image, )
+                print 'Error, old_image "%s" file doesn\'t exist' % (old_image, )
+                old_image = ''
             if os.path.isfile(new_image):
-                print '<p><b>Error</b>, new_image "%s" file exists</p>' % (new_image, )
-            shutil.copyfile(old_image, new_image)
+                print 'Error, new_image "%s" file exists' % (new_image, )
+                new_image = ''
+            if old_image != '' and new_image != '':
+                try:
+                    shutil.copyfile(old_image, new_image)
+                except IOError: # need to prevent copyfile from crashing the script
+                    print 'Error, shutil_copyfile failed with exception'
 
 
         trnscd_act_queue = []
@@ -1060,6 +1068,7 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
                             'TT_started'        : '',           # obv not started
                             'TT_finished'       : '',           # obv not started
                             'inode'             : '',           # doesn't exist yet
+                            'status'            : 'new',        # fresh
                          }
 
         # read the existing submission queue and extend it
@@ -1815,7 +1824,7 @@ def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
                 if key == 'inode':
                     print '\t\t<td align="center">'
                     if 'inode' in q_data[i] and q_data[i]['inode'] != '':
-                        print '%d<br />\n<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s&subtitle=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'], )
+                        print '%s<br />\n<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s&subtitle=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'], )
                 elif key == 'pid':
                     print '\t\t<td align="center">%s<br />' % (elem, )
                     if elem != '':
