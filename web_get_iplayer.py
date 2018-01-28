@@ -130,7 +130,12 @@ TRANSCODE_RESOLUTIONS = OrderedDict( [ ('original'  , 'original resolution'),
                                        ('720x208'   , '360x208 qNTSC'   ),
                                      ] )
 
-# which video files to show from the download folder
+# file types which are images
+IMAGE_FILE_SUFFIXES = [ '.jpg',
+                        '.png',
+                      ]
+
+ # which video files to show from the download folder
 MEDIA_FILE_SUFFIXES = [ '.avi',
                         '.flv',
                         '.m4a',
@@ -579,6 +584,7 @@ def cron_run_download():
             print 'Error, failed writing pending queue item to file %s' % (p_q_f_name, )
 
         first_item['TT_started'] = time.time()
+        first_item['status'] = 'now active'
         print 'pending queue now %s' % str(pend_queue)
         active_queue.append( first_item )
         print 'active queue now %s' % str(active_queue)
@@ -656,7 +662,8 @@ def cron_run_download():
         # attempt to get node number of the downloaded file
         # as this makes it much easier to track if we end up
         # with multiple items having transcoded it
-        first_item['inode'] = find_file_inode_by_pid(first_item['pid'])
+        first_item['inode'] = find_media_file_inode_by_pid(first_item['pid'])
+        first_item['img_inode'] = find_image_file_inode_by_pid(first_item['pid'])
 
         # append the most recent download to recent
         recent_queue.append(first_item)
@@ -674,6 +681,7 @@ def cron_run_download():
             print 'Info, trnscd_cmd_method was set, adding item to transcode queue'
             # FIXME! check that the queue doesn't already contain an identical task
             trnscd_item = { 'inode'             : first_item['inode'],
+                            'img_inode'         : first_item['img_inode'],
                             'pid'               : first_item['pid'],
                             'title'             : first_item['title'],
                             'subtitle'          : first_item['subtitle'],
@@ -752,8 +760,8 @@ def cron_run_transcode():
         if write_queue(trnscd_act_queue, t_a_f_name) == -1:
             print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
 
-        # break the file up into parts, create a new file name according to
-        # how we transcode it, and generate a command to transcode
+        # break the file name up into parts, create a new file name according
+        # to how we transcode it, and generate a command to transcode
         orig_file = find_file_name_by_inode(int(first_item['inode']))
         if orig_file == "":
             print 'Error, failed to find file whose inode is %s' % (first_item['inode'], )
@@ -761,8 +769,7 @@ def cron_run_transcode():
         else:
             first_item['status'] = 'attempting transcode'
             file_prefix, _file_ext = os.path.splitext(orig_file)
-            trnscd_prefix = file_prefix.replace('original.raw', 'transcoded')
-            trnscd_prefix = trnscd_prefix.replace('original', 'transcoded')
+            trnscd_prefix = file_prefix.replace('original', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
             cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
@@ -801,12 +808,10 @@ def cron_run_transcode():
                 first_item['status'] = 'transcode probably successful'
 
             # copy the image if possible
-            old_image = '%s.jpg' % (file_prefix, )
+            if first_item['img_inode'] != '':
+                old_image = find_file_name_by_inode(int(first_item['img_inode']))
             new_image = '%s%s.jpg' % (trnscd_prefix, fnameadd, )
             print 'Debug, trnscd_prefix %s, fnameadd %s, copyfile "%s" "%s"' % (trnscd_prefix, fnameadd, old_image, new_image, )
-            if not os.path.isfile(old_image):
-                print 'Error, old_image "%s" file doesn\'t exist' % (old_image, )
-                old_image = ''
             if os.path.isfile(new_image):
                 print 'Error, new_image "%s" file exists' % (new_image, )
                 new_image = ''
@@ -865,22 +870,46 @@ def delete_files_by_inode(inode_list, del_img_flag):
 
 
 #####################################################################################################################
-def find_file_inode_by_pid(p_pid):
+def find_media_file_inode_by_pid(p_pid):
     """this is used to find the inode of a file to uniquely identify it when freshly downloaded,
     it only checks for files with a media file type, so ignores jpegs for example.
-    returns non-zero if a file was found.
+    returns zero if a file wasn't found.
     FIXME! doesn't look in subdirectories.
     """
 
     file_inode = 0
 
-    print 'Debug, find_file_inode_by_pid pid "%s"' % (p_pid, )
+    print 'Debug, find_media_file_inode_by_pid pid "%s"' % (p_pid, )
 
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
     for file_name in file_list:
         file_prefix, file_ext = os.path.splitext(file_name)
-        #print 'Debug, find_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, )
+        #print 'Debug, find_media_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, )
         if p_pid in file_prefix and file_ext in MEDIA_FILE_SUFFIXES:
+            file_inode = os.stat(file_name).st_ino
+            print 'Debug, found inode %d for pid %s' % (file_inode, p_pid)
+
+    return file_inode
+
+
+#####################################################################################################################
+def find_image_file_inode_by_pid(p_pid):
+    """this is used to find the image file name matching a program pid.
+    Note: When downloading radio programs, the image file name doesn't
+    exactly match the media file.
+    returns blank if a file wasn't found.
+    FIXME! doesn't look in subdirectories.
+    """
+
+    file_inode = 0
+
+    print 'Debug, find_image_file_inode_by_pid pid "%s"' % (p_pid, )
+
+    file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+    for file_name in file_list:
+        file_prefix, file_ext = os.path.splitext(file_name)
+        #print 'Debug, find_image_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, )
+        if p_pid in file_prefix and file_ext in IMAGE_FILE_SUFFIXES:
             file_inode = os.stat(file_name).st_ino
             print 'Debug, found inode %d for pid %s' % (file_inode, p_pid)
 
@@ -890,6 +919,7 @@ def find_file_inode_by_pid(p_pid):
 #####################################################################################################################
 def find_file_name_by_inode(inode):
     """given an inode, finds the file name relative to the iplayer_directory
+    returns blank if a file wasn't found.
     FIXME! doesn't look in subdirectories.
     """
 
@@ -901,7 +931,7 @@ def find_file_name_by_inode(inode):
     for file_name in file_list:
         full_file_path = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
         if inode == os.stat(full_file_path).st_ino:
-            print 'Debug, found file %s' % (file_name, )
+            print 'Debug, find_file_name_by_inode found file %s' % (file_name, )
             file_wanted = file_name
 
     return file_wanted
@@ -909,19 +939,19 @@ def find_file_name_by_inode(inode):
 
 
 #####################################################################################################################
-def find_file_name_by_pid(p_pid):
-    """we don't know the exact file name when we downloaded something
-    FIXME! doesn't look in subdirectories.
-    """
-
-    wanted_file = ''
-
-    file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
-    for file_name in file_list:
-        if p_pid in file_name and ('original' in file_name or 'default' in file_name):
-            wanted_file = file_name
-
-    return wanted_file
+#def find_file_name_by_pid(p_pid):
+#    """we don't know the exact file name when we downloaded something
+#    FIXME! doesn't look in subdirectories.
+#    """
+#
+#    wanted_file = ''
+#
+#    file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+#    for file_name in file_list:
+#        if p_pid in file_name and ('original' in file_name or 'default' in file_name):
+#            wanted_file = file_name
+#
+#    return wanted_file
 
 
 #####################################################################################################################
@@ -1326,7 +1356,7 @@ def page_queues(p_pid, p_delete_pid, p_delete_queue):
                                 print '<p><b>Success</b>, written queue file</p>'
 
                         else:
-                            print 'item at position %d doesn\'t have matching pid %s<br />' (idx, queue[idx]['pid'], )
+                            print 'item at position %d doesn\'t have matching pid %s<br />' % (idx, queue[idx]['pid'], )
             else:
                 print '<b>Error</b>, queue file hasn\'t been created'
 
