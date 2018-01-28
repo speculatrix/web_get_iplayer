@@ -1068,12 +1068,6 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
             print '        <td><input type="hidden" name="trnscd_rez" value="" /></td></tr>\n'
             print '    <tr><td>Radio Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_audio'), )
 
-        #print '        <td><select name="trnscd_cmd_method">\n'
-        #print '    <option value="">None</option>'
-        #print '    <option value="trnscd_cmd_video">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_video'), )
-        #print '    <option value="trnscd_cmd_audio">%s</option>' % (my_settings.get(SETTINGS_SECTION, 'trnscd_cmd_audio'), )
-        #print '</select>\n</td></tr>'
-
         print '    <tr><td colspan="2"><input type="submit" name="submit" value="enqueue" /></td></tr>'
         print '  </table>'
         print '  </form>'
@@ -1518,17 +1512,14 @@ def page_queues(p_pid, p_delete_pid, p_delete_queue):
 def page_search(p_mediatype, p_sought):
     """page which uses the BBC iplayer API to search for programs which does free-text search"""
 
-    print '<form method="get" action="">'
-    print '<input type="hidden" name="page" value="search" />'
-    print 'Search term: <input type="text" name="sought" value="%s" />' % (html_unescape(p_sought), )
+    print '<form method="get" action="">'                           \
+          '<input type="hidden" name="page" value="search" />'      \
+          'Search term: <input type="text" name="sought" value="%s" />' % (html_unescape(p_sought), )
 
-    print '<select name="mediatype">\n'                 \
-          '\t<option value="video">TV</option>\n'       \
-          '\t<option value="audio">Radio</option>\n'    \
-          '</select>\n'
+    print_select_mediatype(p_mediatype)
 
-    print '<input type="submit" name="submit" value="search" />'
-    print '</form>'
+    print '<input type="submit" name="submit" value="search" />'    \
+          '</form>'
 
 
     if p_sought != '':
@@ -2022,6 +2013,20 @@ def print_audio_listing_rows(j_rows):
             print '    </tr>'
 
 
+#####################################################################################################################
+def print_select_mediatype(p_mediatype):
+    """prints an HTML SELECT of mediatypes"""
+
+    print '<select name="mediatype">\n'
+    for medty in MEDIATYPES:
+        selected = ''
+        if medty == p_mediatype:
+            selected = ' selected'
+        print '\t<option value="%s" %s>%s</option>' % (medty, selected, medty, )
+
+    print '</select>'
+
+
 #######################################################################################################################
 def print_select_resolution(p_trsncd_rez):
     """prints an HTML SELECT of standard resolutions for transcoding"""
@@ -2046,6 +2051,7 @@ def print_select_transcode_method(p_trnscd_cmd_method):
             selected = ' selected'
         print '    <option value="%s" %s>%s</option>' % (tr_method, selected, TRANSCODE_COMMANDS[tr_method]['name'], )
     print '</select>'
+
 
 #####################################################################################################################
 def read_queue(queue, queue_file_name):
@@ -2184,7 +2190,6 @@ table td, table th {
         # gather all the browser supplied CGI params and validate/sanitise
 
         if 'enable_delete' in CGI_PARAMS:
-            print 'you chose enabled delete\n<br />\n'
             inode_list = CGI_PARAMS.getlist("delete_inode")
             del_img_flag = 0
             if 'delete_image' in CGI_PARAMS:
