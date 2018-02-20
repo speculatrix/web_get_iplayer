@@ -162,7 +162,7 @@ sudo wget https://ssl.p.jwpcdn.com/player/download/jwplayer-7.12.8.zip
 sudo unzip jwplayer-7.12.8.zip
 ```
 
-### Trancoding
+### Transcoding
 
 You can transcode the TS (video) and M4A (audio) files into other formats
 to play on other devices; mp4 is a popular choice for video, mp3 for audio.
