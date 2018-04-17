@@ -93,7 +93,7 @@ sudo chmod ugo+x web_get_iplayer.py
 
 ## Installation - part 2 - setting up the web interface's environment
 
-Access the web interace with your web browser, e.g. http://localhost/cgi-bin/web_get_iplayer.py
+Access the web interface with your web browser, e.g. http://localhost/cgi-bin/web_get_iplayer.py
 
 The program analyses its environment and will tell you what to do,
 e.g. what directories to create and what permissions to give them.
@@ -135,6 +135,7 @@ runs if you want to allow your server to idle more.
 In case of problems, check files in `/var/lib/web_get_iplayer/` which is where
 all the queues and logs are kept.
 
+
 ## Installation with Docker - local installation
 
 The Dockerfile included can be used to build a local version of the web_get_iplayer script on Debian Wheezy.
@@ -163,7 +164,7 @@ Optionally, also mount `/var/lib/web_get_iplayer` to get access to the iplayer l
 You should be able to play back the downloaded files with mplayer, vlc, ffplay etc.
 
 If you want to play back video or audio tracks in the browser, you need
-JWPlayer, which can play FLV (flash video), mpeg4, or m4a (audio files).
+JWPlayer, which can play FLV (flash video), mpeg4, mp3 or m4a (audio files).
 
 You will need a key in order to use JWPlayer, so register at www.jwplayer.com
 
