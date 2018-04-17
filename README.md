@@ -205,4 +205,37 @@ otherwise you'll see this error:
 
 ## Tips and Tricks
 
-* Use `--pid-recursive-noclips --pid-recursive` at the end of the `download_args` setting to allow for pids of series and programmes - this will download multiple files.
+* Use `--pid-recursive-noclips --pid-recursive` at the end of the
+  `download_args` setting to allow for pids of series and programmes
+   - this will download multiple files.
+
+
+## Podcasts
+
+Perhaps the most convenient way to listen to downloaded radio shows
+is using a podcast player on a portable device.
+
+There's three things you need to do this
+
+* genRSS.py
+  The genRSS.py tool will create an RSS XML feed which should 
+  be compatible with most podcast players. This was forked so that it
+  can handle multiple directories. Grab the forked copy here:
+  https://raw.githubusercontent.com/speculatrix/genRSS/master/genRSS.py
+  and put it at /usr/local/bin and make it executable
+
+* the wrapper script
+  This wrapper script calls the genRSS.py script with a list of directories
+  to be scanned. Grab a copy from
+  https://raw.githubusercontent.com/speculatrix/web_get_iplayer/master/make_iplayer_radio_rss.sh
+  and put it in /usr/local/bin and make it executable. You will almost 
+  definitely need to tweak it with your specific configuration.
+
+* a cron job
+  add a cron job to update the RSS feed every so often,
+  something along these lines:
+```console
+  # every two hours update the RSS feed of BBC iplayer radio downloads
+5  */2 * * *    /home/paulm/projects/web_get_iplayer/make_iplayer_radio_rss.sh http://iplayer.home.mansfield.co.uk/iplayer
+```
+
