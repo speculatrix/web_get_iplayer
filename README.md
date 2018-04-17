@@ -235,7 +235,7 @@ There's three things you need to do this
   add a cron job to update the RSS feed every so often,
   something along these lines:
 ```console
-  # every two hours update the RSS feed of BBC iplayer radio downloads
+# every two hours update the RSS feed of BBC iplayer radio downloads
 5  */2 * * *    /home/paulm/projects/web_get_iplayer/make_iplayer_radio_rss.sh http://iplayer.home.mansfield.co.uk/iplayer
 ```
 
