@@ -21,6 +21,9 @@ run when you bandwidth is cheaper, or when your network connection is
 less used.
 
 
+All code and documents are licensed under the GPL version 3.
+
+
 ## Installation - part 0 - pre-requisites
 
 * install python2 - on ubuntu 16.04, python3 is installed by default, so
@@ -258,4 +261,25 @@ There's three things you need to do this
 # every two hours update the RSS feed of BBC iplayer radio downloads
 5  */2 * * *    /usr/local/bin/web_get_iplayer/make_iplayer_radio_rss.sh http://example.co.uk/iplayer
 ```
+
+
+## More Information
+
+For more information about the get_iplayer tool, please visit
+https://forums.squarepenguin.co.uk/
+
+For more information about the RSS XML podcast generator, please
+visit the forked project on github
+https://github.com/speculatrix/genRSS
+
+
+
+## Acknowledgement and thanks
+
+This program wouldn't be possible with the awesome get_iplayer
+developers.
+
+The podcast generator was originally written by Amine Sehili and
+the original code is at https://github.com/amsehili/genRSS	
+
 
