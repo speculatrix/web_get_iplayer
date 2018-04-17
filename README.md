@@ -1,5 +1,24 @@
 # web_get_iplayer
-a python wrapper to provide a web interface to get_iplayer
+This is a python wrapper to provide a web interface to get_iplayer.
+
+It provides
+* a search tool for radio and tv programs
+* a queuing process to allow sequential downloads
+* a post-download trancoding function to make the media files
+  useful on other devices
+* an in-browser viewing/streaming page to watch and listen to media
+  (this requires download the free JW Player/Longtail streamer)
+
+So for example, you can download a TV program, trancode it to mp4 and
+watch it right in the browser, much as you might use iplayer.
+
+Or you might download a radio program, transcode to mp3 and download
+it onto your phone. Using the podcast tool you can automate this to
+make it really easy!
+
+The queuing process uses the system cron function, so you can set it
+run when you bandwidth is cheaper, or when your network connection is
+less used.
 
 
 ## Installation - part 0 - pre-requisites
