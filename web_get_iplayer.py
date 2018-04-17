@@ -116,8 +116,27 @@ SETTINGS_DEFAULTS = { 'base_url'            : '/iplayer'                        
                       'Flv7Key'             : ''                                , # JW Player 7 Key, leave blank if you don't have one
                     }
 
-TRANSCODE_COMMANDS = { 'trnscd_cmd_audio': { 'name': 'M4A to MP3', 'mediatype': 'audio', 'command': '/usr/local/bin/m4a-to-mp3.sh', 'inext': 'm4a', 'outext': 'mp3', },
-                       'trnscd_cmd_video': { 'name': 'TS to MP4',  'mediatype': 'video', 'command': '/usr/local/bin/ts-to-mp4.sh',  'inext': 'ts',  'outext': 'mp4', },
+TRANSCODE_COMMANDS = { 'M4A_MP3': {
+                            'name'      : 'M4A to MP3',
+                            'mediatype' : 'audio',
+                            'command'   : '/usr/local/bin/m4a-to-mp3.sh',
+                            'inext'     : 'm4a',
+                            'outext'    : 'mp3',
+                        },
+                       'TS_MP4': {
+                            'name'      : 'TS to MP4',
+                            'mediatype' : 'video',
+                            'command'   : '/usr/local/bin/ts-to-mp4.sh',
+                            'inext'     : 'ts',
+                            'outext'    : 'mp4',
+                        },
+                       'FLV_MP4'        :   {
+                            'name'      : 'FLV to MP4',
+                            'mediatype' : 'video',
+                            'command'   : '/usr/local/bin/flv-to-mp4.sh',
+                            'inext'     : 'flv',
+                            'outext'    : 'mp4',
+                         },
                      }
 
 TRANSCODE_RESOLUTIONS = OrderedDict( [ ('original'  , 'original resolution'),
@@ -1287,14 +1306,19 @@ def page_jwplay7(p_dir, p_file):
     if my_settings.get(SETTINGS_SECTION, 'Flv7Key') != '':
         print '    <script type="text/javascript">jwplayer.key="%s";</script>' % (my_settings.get(SETTINGS_SECTION, 'Flv7Key'), )
 
+    if p_dir == '':
+        full_path = '%s/%s' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_file, )
+    else:
+        full_path = '%s/%s/%s' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file, )
+
     print '''    <div id="myelement">loading the player...</div>
     <script type="text/javascript">
         jwplayer("myelement").setup({
-            file: "%s/%s/%s",
+            file: "%s",
             fallback: true
         });
     </script>
-''' % ( my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file)
+''' % ( full_path, )
 
 
 #####################################################################################################################
@@ -2044,6 +2068,7 @@ def print_select_resolution(p_trsncd_rez):
 def print_select_transcode_method(p_trnscd_cmd_method):
     """prints an HTML SELECT of transcoding methods"""
 
+    print '<!-- in print_select_transcode_method -->'
     print '<select name="trnscd_cmd_method">\n'
     for tr_method in TRANSCODE_COMMANDS:
         selected = ''
