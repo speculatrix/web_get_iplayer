@@ -44,10 +44,10 @@ fi
 
 
 if [ "$scale" == "" ] ; then
-	time nice ffmpeg -loglevel warning -i "$INFILE"		-c:a copy -c:v copy		"$OUTFILE"
+	time nice ffmpeg -nostdin -loglevel warning -i "$INFILE"		-c:a copy -c:v copy		"$OUTFILE"
 	errcode=$?
 else
-	time nice ffmpeg -loglevel warning -i "$INFILE" $scale	-c:v libx264 -profile:v baseline "$OUTFILE"
+	time nice ffmpeg -nostdin -loglevel warning -i "$INFILE" $scale	-c:v libx264 -profile:v baseline "$OUTFILE"
 	errcode=$?
 fi
 

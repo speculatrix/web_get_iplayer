@@ -35,9 +35,9 @@ if [ -f "$OUTFILE" ] ; then
 fi
 
 
-#nice ffmpeg --enable-libfdk-aac --enable-nonfree -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
-#nice ffmpeg --enable-nonfree -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
-time nice ffmpeg  -loglevel warning -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
+#nice ffmpeg -nostdin --enable-libfdk-aac --enable-nonfree -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
+#nice ffmpeg -nostdin --enable-nonfree -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
+time nice ffmpeg -nostdin -loglevel warning -i "$INFILE" -ab 320k -map_metadata 0 "$OUTFILE"
 errcode=$?
 
 if [ $errcode -ne 0 ] ; then

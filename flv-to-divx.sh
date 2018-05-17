@@ -64,7 +64,7 @@ fi
 INTERMEDIATE="${OUTFILE%.*}.transcoding.avi"
 
 # fixed quality: quality 4, audio 256k
-time nice ffmpeg -i $INFILE -f avi -vcodec mpeg4 -qscale 4 -b:a 256k -vtag divx $FFMPEGOPTSCALE $INTERMEDIATE
+time nice ffmpeg -nostdin -i $INFILE -f avi -vcodec mpeg4 -qscale 4 -b:a 256k -vtag divx $FFMPEGOPTSCALE $INTERMEDIATE
 errorcode=$?
 # fixed bit rate: video 1280k, audio 320k
 #nice ffmpeg -i $INFILE -f avi -vcodec mpeg4 -b:v 1280k -b:a 320k -vtag divx $FFMPEGOPTSCALE $INTERMEDIATE
