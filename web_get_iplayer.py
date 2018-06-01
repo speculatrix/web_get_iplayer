@@ -720,6 +720,9 @@ def cron_run_download():
             else:
                 print 'Success, written transcode submission queue'
 
+    return 0
+
+
 #####################################################################################################################
 def cron_run_transcode():
     """ this is the function called when in cron mode to process transcode queue"""
@@ -793,14 +796,19 @@ def cron_run_transcode():
             trnscd_prefix = file_prefix.replace('original', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('default', 'transcoded')
             trnscd_prefix = trnscd_prefix.replace('editorial', 'transcoded')
-            cmd = my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method'])
             rezopts = ''
             fnameadd = ''
             if 'trnscd_rez' in first_item and first_item['trnscd_rez'] != '':
                 if first_item['trnscd_rez'] == '' or first_item['trnscd_rez'] != 'original':
                     rezopts = ' -s %s' % (first_item['trnscd_rez'], )
                     fnameadd = '-%s' % (first_item['trnscd_rez'], )
-            cmd = "%s %s %s %s%s.%s" % (my_settings.get(SETTINGS_SECTION, first_item['trnscd_cmd_method']), rezopts, orig_file, trnscd_prefix, fnameadd, TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'], )
+            cmd = "%s %s %s %s%s.%s" % (TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['command'],
+                                        rezopts,
+                                        orig_file,
+                                        trnscd_prefix,
+                                        fnameadd,
+                                        TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['outext'],
+                                       )
 
             log_dir = os.path.join(CONTROL_DIR, 'logs')
             if not os.path.isdir(log_dir):
@@ -856,6 +864,7 @@ def cron_run_transcode():
         if write_queue(trnscd_rec_queue, t_r_f_name) == -1:
             print 'Error, failed writing transcode recents list to file %s' % (t_r_f_name, )
 
+    return 0
 
 #####################################################################################################################
 def delete_files_by_inode(inode_list, del_img_flag):
@@ -1045,7 +1054,7 @@ def page_development(p_dev):
 
 
 #####################################################################################################################
-def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_trnscd_cmd_method, p_trnscd_rez):
+def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_transcode, p_trnscd_cmd_method, p_trnscd_rez):
     """ this page presents the download function"""
 
     if p_pid == '' or p_submit == '':
@@ -1077,15 +1086,16 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
             radio_checked = ' checked'
 
         print '    <tr><td>Type</td><td>TV:<input type="radio" name="mediatype" value="video" %s/>&nbsp;&nbsp;Radio:<input type="radio" name="mediatype" value="audio" %s/></td></tr>' % (tv_checked, radio_checked, )
-        print '    <tr><td>Transcode ?</td>'
+        print '    <tr><td>Transcode ?</td><td><input type="checkbox" name="p_transcode" value="transcode" /></td></tr>\n'
+        print '    <tr><td>Transcode Method</td>\n      <td>',
+        print_select_transcode_method(p_mediatype, p_trnscd_cmd_method)
+        print '</td>',
         if p_mediatype == 'video':
-            print '        <td><input type="checkbox" name="trnscd_cmd_method" value="trnscd_cmd_video" /></td></tr>\n'
-            print '    <tr><td>Transcode Resolution</td><td>'
+            print '    <tr><td>Transcode Resolution</td><td>',
             print_select_resolution('')
-            print '</td></tr>'
-            print '    <tr><td>Video Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_video'), )
+            print '      </td>\n    </tr>'
+            print '    <tr>\n      <td>Video Quality</td>\n      <td>%s (change in settings then click back)</td>\n    </tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_video'), )
         else:
-            print '        <td><input type="checkbox" name="trnscd_cmd_method" value="trnscd_cmd_audio" /></td></tr>\n'
             print '        <td><input type="hidden" name="trnscd_rez" value="" /></td></tr>\n'
             print '    <tr><td>Radio Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_audio'), )
 
@@ -1095,10 +1105,15 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
 
     else:
 
+        if p_transcode == '':
+            p_trnscd_cmd_method = ''
+            p_trnscd_rez = ''
+
         # set type & quality - by default use video mode
-        p_quality = my_settings.get(SETTINGS_SECTION, 'quality_video')
         if p_mediatype == 'audio':
             p_quality = my_settings.get(SETTINGS_SECTION, 'quality_audio')
+        else:
+            p_quality = my_settings.get(SETTINGS_SECTION, 'quality_video')
 
         # create a submission queue item as a dict, so it can be merged with the existing one
         new_sub_q_item = {  'pid'               : p_pid,
@@ -1274,7 +1289,7 @@ def page_favourites_list():
                         print '    <td>%s</td>' % (base64.b64decode(fave[fieldname]), )
                     elif 'TT_' in fieldname:
                         print '    <td>%s</td>' % (time.asctime(time.localtime(fave[fieldname])), )
-                    elif 'pid' == fieldname:
+                    elif fieldname == 'pid':
                         print '    <td><a href="?page=search_related_video&pid=%s&pid_type=%s&mediatype=%s&title=%s">%s</td>' % (
                             fave['pid'],
                             fave['pid_type'],
@@ -1856,7 +1871,7 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_subti
     if p_submit == '' or p_submit != 'Transcode' or p_trnscd_cmd_method == '':
         print '<tr><td>Transcode method:</td><td>'
         print '<form method="get" action="">'
-        print_select_transcode_method(p_trnscd_cmd_method)
+        print_select_transcode_method('', p_trnscd_cmd_method)
         print '</tr>\n<tr><td>Output resolution (if video)</td><td>'
         print_select_resolution(p_trnscd_rez)
         print '</td></tr><tr><td>&nbsp;</td><td>'
@@ -2167,16 +2182,17 @@ def print_select_resolution(p_trsncd_rez):
 
 
 #####################################################################################################################
-def print_select_transcode_method(p_trnscd_cmd_method):
+def print_select_transcode_method(p_mediatype, p_trnscd_cmd_method):
     """prints an HTML SELECT of transcoding methods"""
 
     print '<!-- in print_select_transcode_method -->'
     print '<select name="trnscd_cmd_method">\n'
     for tr_method in TRANSCODE_COMMANDS:
-        selected = ''
-        if tr_method == p_trnscd_cmd_method:
-            selected = ' selected'
-        print '    <option value="%s" %s>%s</option>' % (tr_method, selected, TRANSCODE_COMMANDS[tr_method]['name'], )
+        if p_mediatype == '' or TRANSCODE_COMMANDS[tr_method]['mediatype'] == p_mediatype:
+            selected = ''
+            if tr_method == p_trnscd_cmd_method:
+                selected = ' selected'
+            print '    <option value="%s" %s>%s</option>' % (tr_method, selected, TRANSCODE_COMMANDS[tr_method]['name'], )
     print '</select>'
 
 
@@ -2402,6 +2418,10 @@ table td, table th {
         if 'title' in CGI_PARAMS:
             p_title = CGI_PARAMS.getvalue('title')
 
+        p_transcode = ''
+        if 'transcode' in CGI_PARAMS:
+            p_transcode = CGI_PARAMS.getvalue('transcode')
+
         p_trnscd_cmd_method = ''
         if 'trnscd_cmd_method' in CGI_PARAMS:
             p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
@@ -2428,7 +2448,7 @@ table td, table th {
                 page_downloaded(p_dir)
 
             if p_page == 'download':
-                page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_trnscd_cmd_method, p_trnscd_rez)
+                page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_transcode, p_trnscd_cmd_method, p_trnscd_rez)
 
             if p_page == 'development':
                 p_dev = ''
