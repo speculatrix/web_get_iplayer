@@ -8,6 +8,7 @@ It provides
   useful on other devices
 * an in-browser viewing/streaming page to watch and listen to media
   (this requires download the free JW Player/Longtail streamer)
+* a favourites feature to remember specific "brands" and series
 
 So for example, you can download a TV program, trancode it to mp4 and
 watch it right in the browser, much as you might use iplayer.
