@@ -1,13 +1,5 @@
 #!/bin/bash
 
-scale=""
-if [ "$1" == "-s" ] ; then
-	echo "scaling to $2"
-	scale="-vf scale=$2"
-	shift
-	shift
-fi
-
 INFILE="$1"
 if [ "$INFILE" == "" ] ; then
 	echo "no input file specified"
@@ -16,7 +8,7 @@ fi
 
 
 if [ "$2" == "" ] ; then
-	OUTFILE=`echo $INFILE | sed 's/flv$/mp4/g'`
+	OUTFILE=`echo $INFILE | sed 's/flv$/mp3/g'`
 	echo "Info, output file name $OUTFILE was derived from input file name"
 else
 	OUTFILE="$2"
@@ -47,19 +39,20 @@ if [ -f "$OUTFILE" ] ; then
 	exit 1
 fi
 
+# VBR averaging 224 kb/s allowing the range 190...250
+nice ffmpeg -nostdin -i "$INFILE" -aq 1 transcoding.$OUTFILE
+errcode=$?
 
-if [ "$scale" == "" ] ; then
-	time nice ffmpeg -nostdin -loglevel warning -i "$INFILE"		-c:a copy -c:v copy		"$OUTFILE"
-	errcode=$?
-else
-	time nice ffmpeg -nostdin -loglevel warning -i "$INFILE" $scale	-c:v libx264 -profile:v baseline	"$OUTFILE"
-	errcode=$?
-fi
+# fixed rate 224 kb/s
+#nice ffmpeg -nostdin -i "$INFILE" -c:v liblame -b:a 224k "transcoding.$OUTFILE"
 
-if [ $errcode -ne 0 ] ; then
-	echo "ffmpeg returned error code $errcode"
+# fixed rate 256 kb/s
+#nice ffmpeg -nostdin -i "$INFILE" -c:v liblame -b:a 256k "transcoding.$OUTFILE"
+
+if [ $errcode -eq 0 ] ; then
+	mv transcoding.$OUTFILE $OUTFILE
 fi
 
 exit $errcode
 
-# end flv-to-mp4.sh
+# end flv-to-mp3.sh
