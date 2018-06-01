@@ -116,27 +116,27 @@ SETTINGS_DEFAULTS = { 'base_url'            : '/iplayer'                        
                       'Flv7Key'             : ''                                , # JW Player 7 Key, leave blank if you don't have one
                     }
 
-TRANSCODE_COMMANDS = { 'M4A_MP3': {
-                            'name'      : 'M4A to MP3',
+TRANSCODE_COMMANDS = {  'M4A_MP3':
+                        {   'name'      : 'M4A to MP3',
                             'mediatype' : 'audio',
                             'command'   : '/usr/local/bin/m4a-to-mp3.sh',
                             'inext'     : 'm4a',
                             'outext'    : 'mp3',
                         },
-                       'TS_MP4': {
-                            'name'      : 'TS to MP4',
+                        'TS_MP4':
+                        {   'name'      : 'TS to MP4',
                             'mediatype' : 'video',
                             'command'   : '/usr/local/bin/ts-to-mp4.sh',
                             'inext'     : 'ts',
                             'outext'    : 'mp4',
                         },
-                       'FLV_MP4'        :   {
-                            'name'      : 'FLV to MP4',
+                        'FLV_MP4'        :
+                        {   'name'      : 'FLV to MP4',
                             'mediatype' : 'video',
                             'command'   : '/usr/local/bin/flv-to-mp4.sh',
                             'inext'     : 'flv',
                             'outext'    : 'mp4',
-                         },
+                        },
                      }
 
 TRANSCODE_RESOLUTIONS = OrderedDict( [ ('original'  , 'original resolution'),
@@ -234,10 +234,12 @@ TRNSCD_QUE_FIELDS   = [ 'inode', 'pid', 'title', 'subtitle', 'mediatype',
                         'status',
                       ]
 
-TRNSCDE_SUB_QUEUE    = 'transcode_submit.txt'  # submit queue for transcoding
-TRNSCDE_ACT_QUEUE    = 'transcode_active.txt'  # active transcoding
-TRNSCDE_REC_QUEUE    = 'transcode_recent.txt'  # recent transcoding
+TRNSCDE_SUB_QUEUE   = 'transcode_submit.txt'  # submit queue for transcoding
+TRNSCDE_ACT_QUEUE   = 'transcode_active.txt'  # active transcoding
+TRNSCDE_REC_QUEUE   = 'transcode_recent.txt'  # recent transcoding
 
+FAVOURITES_FIELDS   = [ 'pid', 'pid_type', 'autodownload', 'mediatype', 'TT_added', 'title', 'subtitle', ]
+FAVOURITES_FILE     = 'favourites.txt'          # saved brands, series, searches
 
 URL_GITHUB_HASH_SELF       = 'https://api.github.com/repos/speculatrix/web_get_iplayer/contents/web_get_iplayer.py'
 URL_GITHUB_HASH_GETIPLAYER = 'https://api.github.com/repos/get-iplayer/get_iplayer/contents/get_iplayer'
@@ -1211,6 +1213,91 @@ def page_downloaded(p_dir):
         print '    </table>'
         print '  <input type="submit" name="submit" value="GO" />\n</form>\n'
 
+#####################################################################################################################
+def page_favourites_add(p_pid, p_pid_type, p_mediatype, p_title, p_subtitle):
+    """add a favourite; p_pid is brand ID or series ID according to p_pid_type"""
+
+    print '<h3>work in progress</h3>'
+
+    # read favourites
+    fave_file = os.path.join(CONTROL_DIR, FAVOURITES_FILE)
+    faves = []
+    if not os.path.isfile(fave_file) or read_queue(faves, fave_file) <= 0:
+        print '<p>Creating your first favourite</p>'
+
+    fave = {}
+    fave['pid'] = p_pid
+    fave['pid_type'] = p_pid_type
+    fave['autodownload'] = False
+    fave['mediatype'] = p_mediatype
+    fave['TT_added'] = time.time()
+    fave['title'] = p_title
+    fave['subtitle'] = p_subtitle
+
+    faves.append(fave)
+
+    if write_queue(faves, fave_file) == -1:
+        print '<p><b>Error</b>, failed to write favourites file</p>'
+    else:
+        print '<p><b>Success</b>, written favourites file</p>'
+
+
+#####################################################################################################################
+def page_favourites_list():
+    """this shows the favourites"""
+
+    # read favourites
+    fave_file = os.path.join(CONTROL_DIR, FAVOURITES_FILE)
+    faves = []
+    if not os.path.isfile(fave_file) or read_queue(faves, fave_file) <= 0:
+        print '<h3>Sorry, you haven\'t created any favourites yet</h3>'
+        return 0
+
+    # print favourite brands
+    for pid_type in [ 'brand', 'series' ]:
+        fave_type_found = False
+        for fave in faves:
+            if fave['pid_type'] == pid_type:
+                # print the table heading the first time we see this type of entry
+                if not fave_type_found:
+                    print '<table><tr colspan="4"><th>Favourite %s</th></tr>\n    <tr>' % (pid_type, )
+                    for fieldname in FAVOURITES_FIELDS:
+                        print '<th>%s</th>' % (fieldname, )
+                print '<tr>'
+
+
+                print '<tr>'
+                for fieldname in FAVOURITES_FIELDS:
+                    if fieldname not in fave or fave[fieldname] == '':
+                        print '<td>&nbsp;</td>'
+                    elif 'title' in fieldname:
+                        print '<td>%s</td>' % (base64.b64decode(fave[fieldname]), )
+                    elif 'TT_' in fieldname:
+                        print '<td>%s</td>' % (time.asctime(time.localtime(fave[fieldname])), )
+                    elif 'pid' == fieldname:
+                        print '<td><a href="?page=search_related_video&pid=%s&pid_type=%s&mediatype=%s&title=%s">%s</td>' % (
+                            fave['pid'],
+                            fave['pid_type'],
+                            fave['mediatype'],
+                            fave['title'],
+                            fave['pid'], )
+                    else:
+                        print '<td>%s</td>' % (fave[fieldname], )
+                print '</tr>'
+
+                # print the close table heading the first time we see this type of entry
+                if not fave_type_found:
+                    print '</table><br /><br />'
+                fave_type_found = True
+
+        fave_type_found = False
+
+
+    # print favourite searches
+    print '</pre>'
+
+    print '<h3>work in progress</h3>'
+
 
 #####################################################################################################################
 def page_highlights_video():
@@ -1655,11 +1742,26 @@ def page_search_video(p_sought):
             # search for items which are brands or series
             #print '<tr><td colspan="7">&nbsp;</td></tr>'
             for j_row in program_data:
-                if j_row['tleo'][0]['type'] != 'episode':
-                    search_show_episodes_video(j_row['tleo'][0]['pid'], j_row['tleo'][0]['type'], j_row['tleo'][0]['title'])
+                tleo_pid = j_row['tleo'][0]['pid']
+                tleo_type = j_row['tleo'][0]['type']
+                b64_tleo_title = base64.b64encode(j_row['tleo'][0]['title'])
+
+                if tleo_type != 'episode':
+                    print '<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s pid %s to favourites</a></td></tr>' % (tleo_pid, tleo_type, p_mediatype, b64_tleo_title, tleo_type, tleo_pid, )
+                    search_show_episodes_video(tleo_pid, tleo_type, base64.b64encode(j_row['tleo'][0]['title']))
 
     except urllib2.HTTPError:
         print 'page_search: Video Search - Exception urllib2.HTTPError'
+    print '  </table>\n<br />\n<br />'
+
+#####################################################################################################################
+def page_search_related_video(p_pid, p_pid_type, p_mediatype, p_title):
+    # present data returned by a video search
+    print '  <table width="100%" >\n'
+    if p_mediatype == 'video':
+        search_show_episodes_video(p_pid, p_pid_type, p_title)
+    else:
+        print '<tr><th>Sorry, can\'t search for related programs of type "%s" yet</th></tr>' % (p_mediatype, )
     print '  </table>\n<br />\n<br />'
 
 
@@ -1881,7 +1983,7 @@ def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
                         print '&nbsp;'
                 elif key[:3] == 'TT_' and elem != '':
                     print '\t\t<td align="center">%s' % (time.asctime(time.localtime(elem)), ),
-                elif key == 'title' or key == 'subtitle':
+                elif 'title' in key:
                     print '\t\t<td align="center">%s' % (base64.b64decode(elem), ),
                 else:
                     print '\t\t<td align="center">%s' % (str(elem), ),
@@ -2097,7 +2199,7 @@ def read_queue(queue, queue_file_name):
 
 
 #####################################################################################################################
-def search_show_episodes_video(p_pid, pid_type, title):
+def search_show_episodes_video(p_pid, pid_type, p_title):
     """page of episodes - pid is a brand - and expand the result"""
 
     try:
@@ -2112,7 +2214,7 @@ def search_show_episodes_video(p_pid, pid_type, title):
 
         if dbg_level > 0:
             print '<tr bgcolor="#ddd"><td colspan="7"><pre>'
-            print 'searching for %s - pid %s of type %s - using URL %s' % (title, p_pid, pid_type, url_with_query, )
+            print 'searching for %s - pid %s of type %s - using URL %s' % (p_title, p_pid, pid_type, url_with_query, )
             if dbg_level > 1:
                 print '=== episode search result ==='
                 print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
@@ -2120,7 +2222,7 @@ def search_show_episodes_video(p_pid, pid_type, title):
 
 
         print '    <tr>'
-        print '      <th colspan="7"><br />Video episodes for <i>%s</i> (%s)</th>' % (title, p_pid, )
+        print '      <th colspan="7"><br />Video episodes for <i>%s</i> (%s)</th>' % (base64.b64decode(p_title), p_pid, )
         print '    </tr>'
         print '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
         #if 'episode_recommendations' in json_data and 'elements' in json_data['episode_recommendations']:
@@ -2198,6 +2300,7 @@ table td, table th {
     else:
         print '''<a href="?page=downloaded">Downloaded</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=download">Download</a>&nbsp;&nbsp;&nbsp;
+<a href="?page=favourites_list">Favourites</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=highlights">Highlights</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=popular">Popular</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=queues">Queues & Logs</a>&nbsp;&nbsp;&nbsp;
@@ -2271,6 +2374,10 @@ table td, table th {
                 print 'p_pid is illegal\n'
                 illegal_param_count += 1
 
+        p_pid_type = ''
+        if 'type' in CGI_PARAMS:
+            p_pid_type = CGI_PARAMS.getvalue('type')
+
         p_mediatype = ''
         if 'mediatype' in CGI_PARAMS:
             p_mediatype = CGI_PARAMS.getvalue('mediatype')
@@ -2329,6 +2436,12 @@ table td, table th {
                     p_dev = CGI_PARAMS.getvalue('dev')
                 page_development(p_dev)
 
+            if p_page == 'favourites_add':
+                page_favourites_add(p_pid, p_pid_type, p_mediatype, p_title, p_subtitle)
+
+            if p_page == 'favourites_list':
+                page_favourites_list()
+
             if p_page == 'highlights':
                 page_highlights_video()
 
@@ -2349,6 +2462,9 @@ table td, table th {
 
             if p_page == 'search':
                 page_search(p_mediatype, p_sought)
+
+            if p_page == 'search_related_video':
+                page_search_related_video(p_pid, p_pid_type, p_mediatype, p_title )
 
             if p_page == 'settings':
                 page_settings()
