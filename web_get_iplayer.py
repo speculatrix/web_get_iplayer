@@ -1260,35 +1260,34 @@ def page_favourites_list():
             if fave['pid_type'] == pid_type:
                 # print the table heading the first time we see this type of entry
                 if not fave_type_found:
-                    print '<table><tr colspan="4"><th>Favourite %s</th></tr>\n    <tr>' % (pid_type, )
+                    fave_type_found = True
+                    print '<table>\n  <tr colspan="4"><th>Favourite %s</th></tr>\n  <tr>' % (pid_type, )
                     for fieldname in FAVOURITES_FIELDS:
-                        print '<th>%s</th>' % (fieldname, )
-                print '<tr>'
+                        print '    <th>%s</th>' % (fieldname, )
+                    print '  </tr>'
 
-
-                print '<tr>'
+                print '  <tr>'
                 for fieldname in FAVOURITES_FIELDS:
                     if fieldname not in fave or fave[fieldname] == '':
-                        print '<td>&nbsp;</td>'
+                        print '    <td>&nbsp;</td>'
                     elif 'title' in fieldname:
-                        print '<td>%s</td>' % (base64.b64decode(fave[fieldname]), )
+                        print '    <td>%s</td>' % (base64.b64decode(fave[fieldname]), )
                     elif 'TT_' in fieldname:
-                        print '<td>%s</td>' % (time.asctime(time.localtime(fave[fieldname])), )
+                        print '    <td>%s</td>' % (time.asctime(time.localtime(fave[fieldname])), )
                     elif 'pid' == fieldname:
-                        print '<td><a href="?page=search_related_video&pid=%s&pid_type=%s&mediatype=%s&title=%s">%s</td>' % (
+                        print '    <td><a href="?page=search_related_video&pid=%s&pid_type=%s&mediatype=%s&title=%s">%s</td>' % (
                             fave['pid'],
                             fave['pid_type'],
                             fave['mediatype'],
                             fave['title'],
                             fave['pid'], )
                     else:
-                        print '<td>%s</td>' % (fave[fieldname], )
-                print '</tr>'
+                        print '    <td>%s</td>' % (fave[fieldname], )
+                print '  </tr>'
 
                 # print the close table heading the first time we see this type of entry
-                if not fave_type_found:
-                    print '</table><br /><br />'
-                fave_type_found = True
+        if fave_type_found:
+            print '</table><br /><br />'
 
         fave_type_found = False
 
@@ -1744,10 +1743,11 @@ def page_search_video(p_sought):
             for j_row in program_data:
                 tleo_pid = j_row['tleo'][0]['pid']
                 tleo_type = j_row['tleo'][0]['type']
-                b64_tleo_title = base64.b64encode(j_row['tleo'][0]['title'])
+                tleo_title = j_row['tleo'][0]['title']
+                b64_tleo_title = base64.b64encode(tleo_title)
 
                 if tleo_type != 'episode':
-                    print '<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s pid %s to favourites</a></td></tr>' % (tleo_pid, tleo_type, p_mediatype, b64_tleo_title, tleo_type, tleo_pid, )
+                    print '<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s (%s pid %s) to favourites</a></td></tr>' % (tleo_pid, tleo_type, p_mediatype, b64_tleo_title, tleo_title, tleo_type, tleo_pid, )
                     search_show_episodes_video(tleo_pid, tleo_type, base64.b64encode(j_row['tleo'][0]['title']))
 
     except urllib2.HTTPError:
