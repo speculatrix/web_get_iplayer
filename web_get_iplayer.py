@@ -1235,48 +1235,74 @@ def page_favourites_add(p_pid, p_pid_type, p_mediatype, p_title, p_subtitle):
     print '<h3>work in progress</h3>'
 
     # read favourites
+    faves = {}
     fave_file = os.path.join(CONTROL_DIR, FAVOURITES_FILE)
-    faves = []
-    if not os.path.isfile(fave_file) or read_queue(faves, fave_file) <= 0:
-        print '<p>Creating your first favourite</p>'
+    if not os.path.isfile(fave_file):
+        print '<p>Creating your favourite file</p>'
+    else:
+        try:
+            with open(fave_file) as infile:
+                faves.update(json.load(infile))
 
-    fave = {}
-    fave['pid'] = p_pid
-    fave['pid_type'] = p_pid_type
-    fave['autodownload'] = False
-    fave['mediatype'] = p_mediatype
-    fave['TT_added'] = time.time()
-    fave['title'] = p_title
-    fave['subtitle'] = p_subtitle
+        except OSError:
+            # ignore when file can't be opened
+            print 'Error, page_favourites_add couldn\t open file %s for reading' % (fave_file, )
+            return
 
-    faves.append(fave)
+    if p_pid in faves:
+        print '<p><b>Warning</b>, a favourite with that PID already exists, it is being overwritten</p>'
+
+    faves[p_pid] = { 'pid': p_pid,
+                     'pid_type': p_pid_type,
+                     'autodownload': False,
+                     'mediatype': p_mediatype,
+                     'TT_added': time.time(),
+                     'title': p_title,
+                     'subtitle': p_subtitle,
+                   }
 
     if write_queue(faves, fave_file) == -1:
         print '<p><b>Error</b>, failed to write favourites file</p>'
     else:
         print '<p><b>Success</b>, written favourites file</p>'
 
+    print '<p>Go to <a href="?page=favourites_list">favourites</a> to review your current selection</p>'
 
 #####################################################################################################################
-def page_favourites_list():
+def page_favourites_list(p_delete_pid):
     """this shows the favourites"""
 
     # read favourites
+    faves = {}
     fave_file = os.path.join(CONTROL_DIR, FAVOURITES_FILE)
-    faves = []
-    if not os.path.isfile(fave_file) or read_queue(faves, fave_file) <= 0:
-        print '<h3>Sorry, you haven\'t created any favourites yet</h3>'
-        return 0
+    if not os.path.isfile(fave_file):
+        print '<p>Favourites file not found</p>'
+        return
+    else:
+        try:
+            with open(fave_file) as infile:
+                faves.update(json.load(infile))
+
+        except OSError:
+            # ignore when file can't be opened
+            print 'Error, page_favourites_add couldn\t open file %s for reading' % (fave_file, )
+            return
+
+    if p_delete_pid and p_delete_pid != '':
+        del faves[p_delete_pid]
+        if write_queue(faves, fave_file) == -1:
+            print '<p><b>Error</b>, failed to write favourites file after deleting item</p>'
 
     # print favourite brands
     for pid_type in [ 'brand', 'series' ]:
         fave_type_found = False
-        for fave in faves:
+        for p_pid,fave in faves.iteritems():
+            #print 'favourite pid is %s fave is %s' % (p_pid, str(fave), )
             if fave['pid_type'] == pid_type:
                 # print the table heading the first time we see this type of entry
                 if not fave_type_found:
                     fave_type_found = True
-                    print '<table>\n  <tr colspan="4"><th>Favourite %s</th></tr>\n  <tr>' % (pid_type, )
+                    print '<table>\n  <tr><th colspan="4">Favourite %s</th></tr>\n  <tr>' % (pid_type, )
                     for fieldname in FAVOURITES_FIELDS:
                         print '    <th>%s</th>' % (fieldname, )
                     print '  </tr>'
@@ -1290,12 +1316,12 @@ def page_favourites_list():
                     elif 'TT_' in fieldname:
                         print '    <td>%s</td>' % (time.asctime(time.localtime(fave[fieldname])), )
                     elif fieldname == 'pid':
-                        print '    <td><a href="?page=search_related_video&pid=%s&pid_type=%s&mediatype=%s&title=%s">%s</td>' % (
+                        print '    <td><a href="?page=search_related_video&pid=%s&pid_type=%s&mediatype=%s&title=%s">search' % (
                             fave['pid'],
                             fave['pid_type'],
                             fave['mediatype'],
-                            fave['title'],
-                            fave['pid'], )
+                            fave['title'], ),
+                        print '<br /><a href="?page=favourites_list&delete_pid=%s">delete favourite</a></td>' % (p_pid, )
                     else:
                         print '    <td>%s</td>' % (fave[fieldname], )
                 print '  </tr>'
@@ -2460,7 +2486,7 @@ table td, table th {
                 page_favourites_add(p_pid, p_pid_type, p_mediatype, p_title, p_subtitle)
 
             if p_page == 'favourites_list':
-                page_favourites_list()
+                page_favourites_list(p_delete_pid)
 
             if p_page == 'highlights':
                 page_highlights_video()
