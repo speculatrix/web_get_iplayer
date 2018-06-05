@@ -278,7 +278,7 @@ https://github.com/speculatrix/genRSS
 ## Acknowledgement and thanks
 
 This program wouldn't be possible with the awesome get_iplayer
-developers.
+developers: https://github.com/get-iplayer
 
 The podcast generator was originally written by Amine Sehili and
 the original code is at https://github.com/amsehili/genRSS	

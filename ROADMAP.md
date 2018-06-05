@@ -8,9 +8,6 @@ Plans and history for this program
 
 In chronological order
 
-### Favourites
-add a brand to your favourites
-
 ### Automatic favourite downloading
 check for new programs matching your favourites and download them
 
@@ -23,6 +20,9 @@ media with you easily
 ## Done
 
 In reverse chonological order
+
+### Favourites
+you can add a brand to your favourites, and delete it. very crude so far, but it works OK.
 
 
 ### fix transcoding radio programs to copy the image file.
