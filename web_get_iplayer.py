@@ -12,7 +12,8 @@ This script operates in two modes:
     download the programs
  3/ an RSS feed generator - coming soon!
 
-Released under GPLv3 or later by the author, Paul M, in 2015
+(c) 2015,2016,2017 & 2018 by Paul Mansfield
+Released under GPLv3 or later by the author
 
 Get the JW player from here:
     https://ssl.p.jwpcdn.com/player/download/jwplayer-7.12.8.zip
@@ -189,7 +190,8 @@ URL_LIST = {
     'search_audio'         : 'http://search-suggest.api.bbci.co.uk/search-suggest/suggest?q={0}&format=suggest&category_site=programmes&category_media_type=audio&apikey=' + API_KEY,
     #'search_audio'          : 'http://data.bbc.co.uk/search-suggest/suggest?q={0}&scope=iplayer&format=bigscreen-2&mediatype=audio&mediaset=android-phone-rtmp-high&apikey=' + API_KEY,
     #'search_audio_by_brand' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}?rights=mobile&availability=available&mediatype=audio&initial_child_count=1&api_key=' + API_KEY,
-    'search_episodes_audio' : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}?rights=mobile&availability=available&mediatype=audio&api_key=' + API_KEY, #FIXME
+    #'search_episodes_audio' : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}?rights=mobile&availability=available&mediatype=audio&api_key=' + API_KEY, #FIXME
+    'search_episodes_audio' : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}/episodes?rights=mobile&availability=available&mediatype=audio&page=1&per_page=200&api_key=' + API_KEY,
     'search_audio_recomm'   : 'http://ibl.api.bbci.co.uk/ibl/v1/episodes/{0}/recommendations?rights=mobile&availability=available&page=1&per_page=200&api_key=' + API_KEY, #FIXME
 
     'development'           : 'http://ibl.api.bbci.co.uk/ibl/v1/programmes/{0}/episodes?rights=mobile&availability=available&page=1&per_page=200&api_key=' + API_KEY,
@@ -607,7 +609,7 @@ def cron_run_download():
         first_item['TT_started'] = time.time()
         first_item['status'] = 'now active'
         print 'pending queue now %s' % str(pend_queue)
-        active_queue.append( first_item )
+        active_queue.append(first_item)
         print 'active queue now %s' % str(active_queue)
         if write_queue(pend_queue, p_q_f_name) == -1:
             print 'Error, failed writing submission queue item to %s' % (p_q_f_name, )
@@ -825,7 +827,7 @@ def cron_run_transcode():
             print 'calling shell to do %s' % (cmd, )
             os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
-            # FIXME! set the directory to a subdirectory matching
+            # FIXME! set the directory to a subdirectory matching...
             # FIXME! the first letter of the program.
 
             #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
@@ -1312,11 +1314,11 @@ def page_favourites_list(p_delete_pid):
                     if fieldname not in fave or fave[fieldname] == '':
                         print '    <td>&nbsp;</td>'
                     elif 'title' in fieldname:
-                        print '    <td>%s</td>' % (base64.b64decode(fave[fieldname]), )
+                        print '    <td>%s<br />\n<a href="?page=search&mediatype=%s&submit=search&sought=%s">search this title</a></td>' % (base64.b64decode(fave[fieldname]), fave['mediatype'], html_escape(base64.b64decode(fave['title'])), ),
                     elif 'TT_' in fieldname:
                         print '    <td>%s</td>' % (time.asctime(time.localtime(fave[fieldname])), )
                     elif fieldname == 'pid':
-                        print '    <td><a href="?page=search_related_video&pid=%s&pid_type=%s&mediatype=%s&title=%s">search' % (
+                        print '    <td><a href="?page=search_related&pid=%s&pid_type=%s&mediatype=%s&title=%s">search' % (
                             fave['pid'],
                             fave['pid_type'],
                             fave['mediatype'],
@@ -1724,8 +1726,10 @@ def page_search_audio(p_sought):
                     j_title = j_row['title']
                 #print '    <tr><td colspan="7">%s</td></tr>' % (j_row, )
                 print '    <tr>\n'
-                if j_type == 'episode':
+                b64_title = ''
+                if j_title != '':
                     b64_title = base64.b64encode(j_title)
+                if j_type == 'episode':
                     print '      <td>%s</td>\n' % (pid_to_download_link(j_pid, p_mediatype, b64_title, ''), )
                 elif j_type == 'brand':
                     print '      <td><a href="?page=search">search brand<a></td>\n'
@@ -1736,6 +1740,8 @@ def page_search_audio(p_sought):
                       '      <td>%s</td>\n' \
                       '      <td>%s</td>\n' \
                       '    </tr>' % (j_pid, j_type, j_title, j_synopsis, )
+                if j_type != 'episode':
+                    print '<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s</a> to favourites (%s pid %s)</td></tr>' % (j_pid, j_type, p_mediatype, b64_title, j_title, j_type, j_pid, )
 
     except urllib2.HTTPError:
         print 'page_search: Audio Search - Exception urllib2.HTTPError'
@@ -1796,12 +1802,13 @@ def page_search_video(p_sought):
     print '  </table>\n<br />\n<br />'
 
 #####################################################################################################################
-def page_search_related_video(p_pid, p_pid_type, p_mediatype, p_title):
+def page_search_related(p_pid, p_pid_type, p_mediatype, p_title):
     # present data returned by a video search
     print '  <table width="100%" >\n'
     if p_mediatype == 'video':
         search_show_episodes_video(p_pid, p_pid_type, p_title)
     else:
+        #search_show_episodes_audio(p_pid, p_pid_type, p_title)
         print '<tr><th>Sorry, can\'t search for related programs of type "%s" yet</th></tr>' % (p_mediatype, )
     print '  </table>\n<br />\n<br />'
 
@@ -2241,6 +2248,42 @@ def read_queue(queue, queue_file_name):
 
 
 #####################################################################################################################
+def search_show_episodes_audio(p_pid, pid_type, p_title):
+    """page of episodes - pid is a brand - and expand the result"""
+
+    try:
+        url_key = 'search_episodes_audio'
+        beforesubst = URL_LIST[url_key]
+        url_with_query = beforesubst.format(p_pid)
+        #print 'ssev: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />' % (p_brand, p_mediatype, url_key, )
+
+        opener = urllib2.build_opener()
+        opener.addheaders = [('User-agent', USAG)]
+        json_data = json.load(opener.open(url_with_query))
+
+        if dbg_level > 0:
+            print '<tr bgcolor="#ddd"><td colspan="7"><pre>'
+            print 'searching for %s - pid %s of type %s - using URL %s' % (p_title, p_pid, pid_type, url_with_query, )
+            if dbg_level > 1:
+                print '=== episode search result ==='
+                print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
+            print '</pre></td></tr>'
+
+
+        print '    <tr>'
+        print '      <th colspan="7"><br />Audio episodes for <i>%s</i> (%s)</th>' % (base64.b64decode(p_title), p_pid, )
+        print '    </tr>'
+        print '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
+        #if 'episode_recommendations' in json_data and 'elements' in json_data['episode_recommendations']:
+        if 'programme_episodes' in json_data:
+            if 'elements' in json_data['programme_episodes']:
+                print_audio_listing_rows(json_data['programme_episodes']['elements'])
+
+    except urllib2.HTTPError:
+        print 'search_show_episodes_audio: Exception urllib2.HTTPError'
+
+
+#####################################################################################################################
 def search_show_episodes_video(p_pid, pid_type, p_title):
     """page of episodes - pid is a brand - and expand the result"""
 
@@ -2509,8 +2552,8 @@ table td, table th {
             if p_page == 'search':
                 page_search(p_mediatype, p_sought)
 
-            if p_page == 'search_related_video':
-                page_search_related_video(p_pid, p_pid_type, p_mediatype, p_title )
+            if p_page == 'search_related':
+                page_search_related(p_pid, p_pid_type, p_mediatype, p_title)
 
             if p_page == 'settings':
                 page_settings()
