@@ -869,15 +869,17 @@ def cron_run_transcode():
     return 0
 
 #####################################################################################################################
-def delete_files_by_inode(inode_list, del_img_flag):
+def delete_files_by_inode(p_dir, inode_list, del_img_flag):
     """scan the downloaded list of files and delete any whose inode matches
     one in the list"""
 
-    file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
+    sub_dir = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), p_dir)
+    #file_scsan = os.scandir(sub_dir)   # sadly not in std python2.7
+    file_list = os.listdir(sub_dir)
 
     for file_name in sorted(file_list):
-        full_file_path = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
-        if os.path.isfile(full_file_path):    # need to check file exists in case its a jpg we already deleted
+        full_file_path = os.path.join(sub_dir, file_name)
+        if os.path.isfile(full_file_path):    # prevent statting a file as may be a jpg we just deleted
             file_stat = os.stat(full_file_path)
             #print 'considering file %s which has inode %d\n<br >' % (full_file_path, file_stat[stat.ST_INO], )
 
@@ -885,14 +887,14 @@ def delete_files_by_inode(inode_list, del_img_flag):
                 print 'file %s is being deleted \n<br >' % (full_file_path, )
                 try:
                     os.remove(full_file_path)
-                except OSError: # for some reason the above works but throws exception
-                    print 'error deleting %s\n<br />' % full_file_path
+                except OSError as err: # for some reason the above works but throws exception
+                    print 'error deleting %s code %s\n<br />' % (full_file_path, err, )
 
                 if del_img_flag:
                     file_prefix, _ignore = os.path.splitext(full_file_path)
                     image_file_name = file_prefix + '.jpg'
                     if os.path.isfile(image_file_name):
-                        print 'image %s is being deleted \n<br >' % image_file_name
+                        print 'image %s is being deleted \n<br >' % (image_file_name, )
                         try:
                             os.remove(image_file_name)
                         except OSError: # for some reason the above works but throws exception
@@ -1168,12 +1170,15 @@ def page_downloaded(p_dir):
         print '<p><b>Error, no such directory "%s"</b></p>' % (p_dir, )
     else:
         print '<p><b>Analysing directory "%s"</b></p>' % (full_dir, )
-        print '  <form method="get" action="" />'
-        print '    <input type="hidden" name="page" value="downloaded" />'
-        print '    <input type="checkbox" name="enable_delete" />Enable Delete&nbsp;&nbsp;&nbsp;<input type="checkbox" name="delete_image" />Delete Associated Image<br /><br />'
-        print '    <table>'
-        print '      <tr>'
-        print '        <th>&nbsp;</th>'
+        print '  <form method="get" action="" />'                                   \
+              '    <input type="hidden" name="page" value="downloaded" />'          \
+              '    <input type="hidden" name="dir" value="%s" />'                   \
+              '    <input type="checkbox" name="enable_delete" />Enable Delete'     \
+              '&nbsp;&nbsp;&nbsp;<input type="checkbox" name="delete_image" />'     \
+              'Delete Associated Image<br /><br />' % (p_dir, )
+        print '    <table>'             \
+              '      <tr>'              \
+              '        <th>&nbsp;</th>'
         if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
             print '        <th>JWPlayer5</th>'
         if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
@@ -1218,13 +1223,13 @@ def page_downloaded(p_dir):
                     else:
                         print '      <td>&nbsp;</td>'
 
-                print '      <td align="center"><a href="%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), file_item, )
+                print '      <td align="center"><a href="%s/%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_item, )
                 #print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
                 print '      <td><a href="?page=transcode_inode&inode=%d"><img src="/icons/transfer.png" /></td>' % (file_stat[stat.ST_INO], )
                 print '      <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
-                print '      <td>%d</td>' % (file_stat.st_size / 1024)
-                print '      <td>%s</td>' % time.ctime(file_stat.st_mtime)
-                print '      <td>%s</td>' % file_item
+                print '      <td>%d</td>' % (file_stat.st_size / 1024, )
+                print '      <td>%s</td>' % time.ctime(file_stat.st_mtime, )
+                print '      <td>%s</td>' % (file_item, )
                 print '    </tr>'
 
         print '    </table>'
@@ -2402,15 +2407,6 @@ table td, table th {
         ########
         # gather all the browser supplied CGI params and validate/sanitise
 
-        if 'enable_delete' in CGI_PARAMS:
-            inode_list = CGI_PARAMS.getlist("delete_inode")
-            del_img_flag = 0
-            if 'delete_image' in CGI_PARAMS:
-                del_img_flag = 1
-            #if len(inode_list):
-            if inode_list:
-                delete_files_by_inode(inode_list, del_img_flag)
-
         p_delete_queue = ''
         if 'delete_queue' in CGI_PARAMS:
             p_delete_queue = CGI_PARAMS.getvalue('delete_queue')
@@ -2433,6 +2429,17 @@ table td, table th {
                 print 'p_dir is illegal\n'
                 illegal_param_count += 1
 
+        # FIXME! move this into downloaded() page
+        if 'enable_delete' in CGI_PARAMS:
+            inode_list = CGI_PARAMS.getlist("delete_inode")
+            del_img_flag = 0
+            if 'delete_image' in CGI_PARAMS:
+                del_img_flag = 1
+            #if len(inode_list):
+            if inode_list:
+                delete_files_by_inode(p_dir, inode_list, del_img_flag)
+            else:
+                print '<p><b>Error, inode list was empty, couldn\'t delete</b></p>'
 
         p_file = ''
         if 'file' in CGI_PARAMS:
