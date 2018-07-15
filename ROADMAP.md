@@ -6,14 +6,20 @@ Plans and history for this program
 
 ## Future Features
 
-In chronological order
+In no particular order
 
 ### Automatic favourite downloading
 check for new programs matching your favourites and download them
 
 ### podcast generation
-create rss feed/podcasts for different media types so you can take your
-media with you easily
+tidy up podcast generation. might be nicer to make it part of web_get_iplayer
+instead of being an external program, then the podcasts are refreshed on 
+demand instead of own cron?
+
+
+### Sub directories
+tell get_iplayer to download into sub director.
+transcode things in sub directory
 
 
 ### improve the radio search function
@@ -27,12 +33,22 @@ API for some things.
 
 In reverse chonological order
 
+### Sub directories
+Fixed bug deleting items in sub directory.
+Fixed bug allowing web browser to raw download from sub directory.
+
+### podcast generation
+found and adapted a tool which will generate podcast feeds for you.
+can create rss feed/podcasts for different media types so you can take your
+media with you easily
+
+
 ### Favourites
-you can add a brand to your favourites, and delete it. very crude so far,
-but it works OK.
+you can add a series or brand to your favourites, and delete it. very crude
+so far, but it works OK. Fixed saving radio faves in July 2017.
 
 
-### fix transcoding radio programs to copy the image file.
+### When transcoding radio programs, copy the image file.
 radio programs have, for unknown reason, quite different file name for media
 file from image file name.
 this is done by recording the inode of the image file after download
