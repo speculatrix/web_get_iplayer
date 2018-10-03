@@ -173,8 +173,12 @@ JWPLAYABLE_SUFFIXES = [ '.flv',
 
 # it seems everybody has the same API key, so we'll use a very common USer AGent string to not draw attention to ourselves
 USAG    = 'BBCiPlayer/4.4.0.235 (Nexus5; Android 4.4.4)'
-API_KEY = 'q5wcnsqvnacnhjap7gzts9y6'
-#API_KEY = 'bLBgJDghrAMaZA1eSFB8TbqOTraEJbUa' # iplayer radio
+
+# API_KEY from http://polling.bbc.co.uk/appconfig/iplayerradio/android/2.9.0/config.json
+API_KEY = 'bLBgJDghrAMaZA1eSFB8TbqOTraEJbUa'    # iplayer radio key
+
+#API_KEY = 'q5wcnsqvnacnhjap7gzts9y6'   # stopped working sometime about August 2018
+
 
 # these URLs have been discovered using tcpdump whilst watching the android iplayer app
 URL_LIST = {
@@ -1704,8 +1708,9 @@ def page_search_audio(p_sought):
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
-        json_data = json.load(opener.open(url_with_query))
+        #print '<!-- audio search url %s -->' % (url_with_query, )
 
+        json_data = json.load(opener.open(url_with_query))
         program_data = json_data['results']
 
         if dbg_level > 1:
@@ -1748,8 +1753,8 @@ def page_search_audio(p_sought):
                 if j_type != 'episode':
                     print '<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s</a> to favourites (%s pid %s)</td></tr>' % (j_pid, j_type, p_mediatype, b64_title, j_title, j_type, j_pid, )
 
-    except urllib2.HTTPError:
-        print 'page_search: Audio Search - Exception urllib2.HTTPError'
+    except urllib2.HTTPError as uhe:
+        print 'page_search: Audio Search - Exception urllib2.HTTPError %s' % uhe
 
 
 #####################################################################################################################
@@ -1766,8 +1771,9 @@ def page_search_video(p_sought):
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
-        json_data = json.load(opener.open(url_with_query))
+        #print '<!-- video search url %s -->' % (url_with_query, )
 
+        json_data = json.load(opener.open(url_with_query))
         program_data = json_data[1]
 
         if dbg_level > 0:
@@ -1802,8 +1808,8 @@ def page_search_video(p_sought):
                     print '<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s (%s pid %s) to favourites</a></td></tr>' % (tleo_pid, tleo_type, p_mediatype, b64_tleo_title, tleo_title, tleo_type, tleo_pid, )
                     search_show_episodes_video(tleo_pid, tleo_type, base64.b64encode(j_row['tleo'][0]['title']))
 
-    except urllib2.HTTPError:
-        print 'page_search: Video Search - Exception urllib2.HTTPError'
+    except urllib2.HTTPError as uhe:
+        print 'page_search: Video Search - Exception urllib2.HTTPError %s' % uhe
     print '  </table>\n<br />\n<br />'
 
 #####################################################################################################################
