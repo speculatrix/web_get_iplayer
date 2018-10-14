@@ -546,6 +546,8 @@ def page_kill(p_unix_pid):
 def cron_run_download():
     """ this is the function called when in cron mode to process download queue"""
 
+    global dbg_level
+
     # get active queue, if it's not empty, then exit as only one download may be active
     # FIXME! allow multiple active downloads
     active_queue = []
@@ -765,6 +767,7 @@ def cron_run_download():
 def cron_run_transcode():
     """ this is the function called when in cron mode to process transcode queue"""
 
+    global dbg_level
 
     ######################### grab all the queues
 
@@ -840,7 +843,7 @@ def cron_run_transcode():
                 if first_item['trnscd_rez'] == '' or first_item['trnscd_rez'] != 'original':
                     rezopts = ' -s %s' % (first_item['trnscd_rez'], )
                     fnameadd = '-%s' % (first_item['trnscd_rez'], )
-            cmd = "%s %s %s %s%s.%s" % (TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['command'],
+            cmd = '%s %s %s %s%s.%s' % (TRANSCODE_COMMANDS[first_item['trnscd_cmd_method']]['command'],
                                         rezopts,
                                         orig_file,
                                         trnscd_prefix,
@@ -1201,7 +1204,7 @@ def page_downloaded(p_dir):
     print '    </select>&nbsp;&nbsp;<input type="submit" name="submit" value="GO" />\n</form>\n<br /><br />'
 
 
-    full_dir = "%s/%s" % (my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), p_dir)
+    full_dir = '%s/%s' % (my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), p_dir)
     if not os.path.isdir(full_dir):
         print '<p><b>Error, no such directory "%s"</b></p>' % (p_dir, )
     else:
@@ -1236,7 +1239,7 @@ def page_downloaded(p_dir):
             if file_ext in MEDIA_FILE_SUFFIXES:
                 file_stat = os.stat("%s/%s" % (full_dir, file_item, ))
                 print '    <tr>\n      <td align="center">',
-                file_name_jpg = "%s/%s.jpg" % (full_dir, file_prefix, )
+                file_name_jpg = '%s/%s.jpg' % (full_dir, file_prefix, )
                 if os.path.isfile(file_name_jpg):
                     print '<img src="%s/%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_prefix, ),
                 else:
@@ -1386,6 +1389,8 @@ def page_favourites_list(p_delete_pid):
 def page_highlights_video():
     """this shows the BBCs highlights program listings"""
 
+    global dbg_level
+
     url_key = 'highlights'
 
     try:
@@ -1494,6 +1499,9 @@ def page_jwplay7(p_dir, p_file):
 #####################################################################################################################
 def page_popular():
     """this shows the bbcs popular programs listings"""
+
+    global dbg_level
+
     url_key = 'popular'
 
     try:
@@ -1728,6 +1736,8 @@ def page_search(p_mediatype, p_sought):
 def page_search_audio(p_sought):
     """page which uses the BBC iplayer API to search for programs which does free-text search"""
 
+    global dbg_level
+
 
     # present data returned by a audio search
     p_mediatype = 'audio'
@@ -1793,6 +1803,7 @@ def page_search_audio(p_sought):
 def page_search_video(p_sought):
     """page which uses the BBC iplayer API to search for programs which does free-text search"""
 
+    global dbg_level
 
     # present data returned by a video search
     p_mediatype = 'video'
@@ -2098,6 +2109,8 @@ def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
 def print_video_listing_rows(j_rows):
     """this is a helper function which prints programs rows in a standard form"""
 
+    global dbg_level
+
     p_mediatype = 'video'
 
     for j_row in j_rows:
@@ -2170,6 +2183,8 @@ def print_video_listing_rows(j_rows):
 #####################################################################################################################
 def print_audio_listing_rows(j_rows):
     """this is a helper function which prints programs rows in a standard form"""
+
+    global dbg_level
 
     p_mediatype = 'audio'
 
@@ -2298,6 +2313,8 @@ def read_queue(queue, queue_file_name):
 def search_show_episodes_audio(p_pid, pid_type, p_title):
     """page of episodes - pid is a brand - and expand the result"""
 
+    global dbg_level
+
     try:
         url_key = 'search_episodes_audio'
         beforesubst = URL_LIST[url_key]
@@ -2333,6 +2350,8 @@ def search_show_episodes_audio(p_pid, pid_type, p_title):
 #####################################################################################################################
 def search_show_episodes_video(p_pid, pid_type, p_title):
     """page of episodes - pid is a brand - and expand the result"""
+
+    global dbg_level
 
     try:
         url_key = 'search_episodes_video'
@@ -2370,6 +2389,8 @@ def search_show_episodes_video(p_pid, pid_type, p_title):
 def web_interface():
     """this is the function which produces the web interface, as opposed
     to the cron function"""
+
+    global dbg_level
 
     illegal_param_count = 0
 
@@ -2413,7 +2434,7 @@ table td, table th {
         enable_dev_mode = 1
 
     if 'dbg_level' in CGI_PARAMS:
-        dbg_level = int(CGI_PARAMS.getvalue("dbg_level"))
+        dbg_level = int(CGI_PARAMS.getvalue('dbg_level'))
 
     if dbg_level > 0:
         print 'Python errors at <a href="/python_errors/?C=M;O=A" target="_new">/python_errors (new window)</a><br />'
