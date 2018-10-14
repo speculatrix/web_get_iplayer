@@ -33,6 +33,10 @@ API for some things.
 
 In reverse chonological order
 
+### Stop background get_iplayer
+
+It is now possible to kill a running get_iplayer background process
+
 ### Sub directories
 Fixed bug deleting items in sub directory.
 Fixed bug allowing web browser to raw download from sub directory.
