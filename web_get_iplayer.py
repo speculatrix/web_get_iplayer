@@ -49,6 +49,7 @@ import os
 from os.path import expanduser
 import re               # now have two problems
 import shutil
+import signal
 import stat
 import sys
 import time
@@ -226,7 +227,7 @@ QUEUE_FIELDS    = [ 'inode', 'pid', 'title', 'subtitle',
                     'mediatype', 'quality', 'force',
                     'trnscd_cmd_method', 'trnscd_rez',
                     'TT_submitted', 'TT_started', 'TT_finished',
-                    'status',
+                    'status', 'unix_pid',
                   ]
 
 SUBMIT_QUEUE    = 'submit.txt'  # where the web page submits/enqueues
@@ -525,6 +526,23 @@ Please do the following - needs root:
 
 
 #####################################################################################################################
+def page_kill(p_unix_pid):
+    """sends a kill to the process ID.. very dangerous!!"""
+
+    if p_unix_pid != '':
+        try:
+            unix_pid = int(p_unix_pid)
+            if p_unix_pid > 0:
+                os.kill(unix_pid, signal.SIGQUIT)
+                # FIXME! this should really check the process to verify that it's the get_iplayer task!
+                print '<p><b>Killed</b>, unix pid %d was sent a CTRL-C</p>' % (unix_pid, )
+        except ValueError:
+            print '<p><b>Error</b>, unix pid %s supplied was invalid</p>' % (p_unix_pid, )
+    else:
+        print '<p><b>Error</b>, no unix pid supplied</p>'
+
+
+#####################################################################################################################
 def cron_run_download():
     """ this is the function called when in cron mode to process download queue"""
 
@@ -667,64 +685,78 @@ def cron_run_download():
         # FIXME! set the directory to a subdirectory matching
         # FIXME! the first letter of the program.
 
-        #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
-        sys_error = os.system(cmd)
-        if sys_error != 0:
-            print "Error, get_iplayer returned error code %d" % (sys_error, )
-            first_item['status'] = 'execution of get_iplayer failed with error %d' % (sys_error, )
-        else:
-            first_item['status'] = 'download probably successful'
+        get_iplayer_pid = os.fork()
+        if get_iplayer_pid:
+            first_item['unix_pid'] = get_iplayer_pid
+            # update active queue
+            if write_queue(active_queue, a_q_f_name) != -1:
+                print 'Success, written active item %s to %s' % (str(active_queue), a_q_f_name, )
 
-        # record when the download completed
-        first_item['TT_finished'] = time.time()
-        # set active queue empty now the system() call finished
-        # FIXME! remove an individual item to allow for parallelism
-        active_queue = []
-        active_file = os.path.join(CONTROL_DIR, ACTIVE_QUEUE)
-        if write_queue(active_queue, active_file) == -1:
-            print 'Error, failed to write empty active file'
-        else:
-            print 'Success, written empty active file'
+            os.wait()
+        else:   # the sub process runs get_iplayer
+            # let the parent rewrite the active queue with our pid, this is
+            # a bodge but hopefully we won't encounter a race condition
+            time.sleep(1)
+            sys_error = os.system(cmd)
+            #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
 
-        # attempt to get node number of the downloaded file
-        # as this makes it much easier to track if we end up
-        # with multiple items having transcoded it
-        first_item['inode'] = find_media_file_inode_by_pid(first_item['pid'])
-        first_item['img_inode'] = find_image_file_inode_by_pid(first_item['pid'])
-
-        # append the most recent download to recent
-        recent_queue.append(first_item)
-        # shorten recent queue to max allowed in settings
-        while len(recent_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
-            print 'removing oldest item from recent items queue'
-            recent_queue.pop(0)
-        if write_queue(recent_queue, r_c_f_name) == -1:
-            print 'Error, failed to write recent items file'
-        else:
-            print 'Success, written recent items file'
-
-        # if transcode was requested, append to queue
-        if 'trnscd_cmd_method' in first_item and first_item['trnscd_cmd_method'] != '':
-            print 'Info, trnscd_cmd_method was set, adding item to transcode queue'
-            # FIXME! check that the queue doesn't already contain an identical task
-            trnscd_item = { 'inode'             : first_item['inode'],
-                            'img_inode'         : first_item['img_inode'],
-                            'pid'               : first_item['pid'],
-                            'title'             : first_item['title'],
-                            'subtitle'          : first_item['subtitle'],
-                            'mediatype'         : first_item['mediatype'],
-                            'trnscd_cmd_method' : first_item['trnscd_cmd_method'],
-                            'trnscd_rez'        : first_item['trnscd_rez'],
-                            'TT_submitted'      : time.time(),
-                            'TT_started'        : '',
-                            'TT_finished'       : '',
-                            'status'            : 'queued',
-                          }
-            trnscd_sub_queue.append(trnscd_item)
-            if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
-                print 'Error, failed to write transcode submission queue'
+            if sys_error != 0:
+                print "Error, get_iplayer returned error code %d" % (sys_error, )
+                first_item['status'] = 'execution of get_iplayer failed with error %d' % (sys_error, )
             else:
-                print 'Success, written transcode submission queue'
+                first_item['status'] = 'download probably successful'
+
+            # record when the download completed
+            first_item['TT_finished'] = time.time()
+            # set active queue empty now the system() call finished
+            # FIXME! remove an individual item to allow for parallelism
+            active_queue = []
+            active_file = os.path.join(CONTROL_DIR, ACTIVE_QUEUE)
+            if write_queue(active_queue, active_file) == -1:
+                print 'Error, failed to write empty active file'
+            else:
+                print 'Success, written empty active file'
+
+            # attempt to get node number of the downloaded file
+            # as this makes it much easier to track if we end up
+            # with multiple items having transcoded it
+            first_item['inode'] = find_media_file_inode_by_pid(first_item['pid'])
+            first_item['img_inode'] = find_image_file_inode_by_pid(first_item['pid'])
+            first_item['unix_pid'] = -1
+
+            # append the most recent download to recent
+            recent_queue.append(first_item)
+            # shorten recent queue to max allowed in settings
+            while len(recent_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
+                print 'removing oldest item from recent items queue'
+                recent_queue.pop(0)
+            if write_queue(recent_queue, r_c_f_name) == -1:
+                print 'Error, failed to write recent items file'
+            else:
+                print 'Success, written recent items file'
+
+            # if transcode was requested, append to queue
+            if 'trnscd_cmd_method' in first_item and first_item['trnscd_cmd_method'] != '':
+                print 'Info, trnscd_cmd_method was set, adding item to transcode queue'
+                # FIXME! check that the queue doesn't already contain an identical task
+                trnscd_item = { 'inode'             : first_item['inode'],
+                                'img_inode'         : first_item['img_inode'],
+                                'pid'               : first_item['pid'],
+                                'title'             : first_item['title'],
+                                'subtitle'          : first_item['subtitle'],
+                                'mediatype'         : first_item['mediatype'],
+                                'trnscd_cmd_method' : first_item['trnscd_cmd_method'],
+                                'trnscd_rez'        : first_item['trnscd_rez'],
+                                'TT_submitted'      : time.time(),
+                                'TT_started'        : '',
+                                'TT_finished'       : '',
+                                'status'            : 'queued',
+                              }
+                trnscd_sub_queue.append(trnscd_item)
+                if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
+                    print 'Error, failed to write transcode submission queue'
+                else:
+                    print 'Success, written transcode submission queue'
 
     return 0
 
@@ -1814,6 +1846,8 @@ def page_search_video(p_sought):
 
 #####################################################################################################################
 def page_search_related(p_pid, p_pid_type, p_mediatype, p_title):
+    """find items related to the pid, which is typically a brand or series"""
+
     # present data returned by a video search
     print '  <table width="100%" >\n'
     if p_mediatype == 'video':
@@ -2040,6 +2074,8 @@ def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
                         print '<a href="?page=download&pid=%s&mediatype=%s&title=%s&subtitle=%s">redownload</a><br />\n' % (q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'],)
                     else:
                         print '&nbsp;'
+                elif key == 'unix_pid':
+                    print '\t\t<td align="center"><a href="?page=kill&unix_pid=%s">kill %s</a>' % (elem, elem),
                 elif key[:3] == 'TT_' and elem != '':
                     print '\t\t<td align="center">%s' % (time.asctime(time.localtime(elem)), ),
                 elif 'title' in key:
@@ -2372,7 +2408,6 @@ table td, table th {
 <body>
 '''
 
-    global dbg_level
     enable_dev_mode = 0
     if 'development' in CGI_PARAMS:
         enable_dev_mode = 1
@@ -2516,6 +2551,10 @@ table td, table th {
         if 'trnscd_rez' in CGI_PARAMS:
             p_trnscd_rez = CGI_PARAMS.getvalue('trnscd_rez')
 
+        p_unix_pid = ''
+        if 'unix_pid' in CGI_PARAMS:
+            p_unix_pid = CGI_PARAMS.getvalue('unix_pid')
+
 
         ########
         # call the specific page
@@ -2555,6 +2594,9 @@ table td, table th {
 
             if p_page == 'jwplay7':
                 page_jwplay7(p_dir, p_file)
+
+            if p_page == 'kill':
+                page_kill(p_unix_pid)
 
             if p_page == 'popular':
                 page_popular()
