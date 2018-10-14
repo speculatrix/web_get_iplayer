@@ -724,7 +724,7 @@ def cron_run_download():
             # with multiple items having transcoded it
             first_item['inode'] = find_media_file_inode_by_pid(first_item['pid'])
             first_item['img_inode'] = find_image_file_inode_by_pid(first_item['pid'])
-            first_item['unix_pid'] = -1
+            first_item['unix_pid'] = ''
 
             # append the most recent download to recent
             recent_queue.append(first_item)
@@ -2086,7 +2086,10 @@ def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
                     else:
                         print '&nbsp;'
                 elif key == 'unix_pid':
-                    print '\t\t<td align="center"><a href="?page=kill&unix_pid=%s">kill %s</a>' % (elem, elem),
+                    if elem != '':
+                        print '\t\t<td align="center"><a href="?page=kill&unix_pid=%s">kill %s</a>' % (elem, elem),
+                    else:
+                        print '\t\t<td align="center">&nbsp;'
                 elif key[:3] == 'TT_' and elem != '':
                     print '\t\t<td align="center">%s' % (time.asctime(time.localtime(elem)), ),
                 elif 'title' in key:
