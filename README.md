@@ -163,6 +163,14 @@ Where {directory} is the destination for downloads.  The server will be availabl
 
 Optionally, also mount `/var/lib/web_get_iplayer` to get access to the iplayer logs from outside the container.
 
+Also optionally, if you have `--pid-recursive` in your get_iplayer settings, it's possible to schedule a job to enqueue a download on a nightly basis to catch up with your favourite programmes.  You'll need the PID from the series (use the URL from the iplayer series page).
+```
+sudo docker run --init --name {NAME} -d -e "OPTIONS=http://{HOST IP}:10080/cgi-bin/web_get_iplayer.py?page=download&title=&subtitle=&pid={PID}&mediatype=videosubmit=enqueue" -e CRON_SCHEDULE="0 1 * * *" jsonfry/curl-cron:latest 
+```
+(You can use a browser's development tools to get the URL from the Download page if you want to add other options such as Transcode)
+
+NOTE: The above Docker image [`jsonfry/curl-cron`](https://hub.docker.com/r/jsonfry/curl-cron) is a third party image and may be subject to change, etc.
+
 ## Playback
 
 You should be able to play back the downloaded files with mplayer, vlc, ffplay etc.
