@@ -37,23 +37,26 @@ of the web UI and therefore must be considered dangerous
 # pylint:disable=line-too-long
 
 
-import base64
-import cgi
-import cgitb
-import ConfigParser
+import  base64
+import  cgi
+import  cgitb
+import  codecs
+import  ConfigParser
 from collections import OrderedDict
 #import datetime
-import hashlib
-import json
-import os
+import  hashlib
+import  json
+import  os
 from os.path import expanduser
-import re               # now have two problems
-import shutil
-import signal
-import stat
-import sys
-import time
-import urllib2
+import  psutil
+import  pwd
+import  re               # now have two problems
+import  shutil
+import  signal
+import  stat
+import  sys
+import  time
+import  urllib2
 
 
 
@@ -1531,6 +1534,16 @@ def page_popular():
 def page_queues(p_pid, p_delete_pid, p_delete_queue):
     """this shows the current state of queues, and prints a log file that matches the p_pid"""
 
+    print '<h3>Processes Running</h3>'
+    print '<ul>'
+    my_username = pwd.getpwuid(os.getuid())[0]
+    for p in psutil.process_iter(attrs=['name', 'username', 'cmdline', ]):
+        if p.info['name'] != 'httpd-prefork' and p.info['username'] == my_username:
+            print '<li>' + ' '.join(p.info['cmdline']) + '</li>'
+    print '</ul>'
+
+    ####
+
     if p_delete_pid != '' and p_delete_queue != '':
         print '<h3>Attempting to remove pid %s from queue %s</h3>\n<p>' % (p_delete_pid, p_delete_queue)
         if p_delete_queue == SUBMIT_QUEUE or p_delete_queue == PENDING_QUEUE or p_delete_queue == TRNSCDE_SUB_QUEUE:
@@ -1780,7 +1793,7 @@ def page_search_audio(p_sought):
                 print '    <tr>\n'
                 b64_title = ''
                 if j_title != '':
-                    b64_title = base64.b64encode(j_title)
+                    b64_title = base64.b64encode(j_title.encode('utf-8'))
                 if j_type == 'episode':
                     print '      <td>%s</td>\n' % (pid_to_download_link(j_pid, p_mediatype, b64_title, ''), )
                 elif j_type == 'brand':
@@ -2144,19 +2157,19 @@ def print_video_listing_rows(j_rows):
 
         j_title = ''
         if 'title' in prog_item:
-            j_title = unicode(prog_item['title']).encode('ascii', 'ignore')
+            j_title = prog_item['title']
         j_subtitle = ''
         if 'subtitle' in prog_item:
-            j_subtitle = unicode(prog_item['subtitle']).encode('ascii', 'ignore')
+            j_subtitle = prog_item['subtitle']
         b64_title = base64.b64encode(j_title)
         b64_subtitle = base64.b64encode(j_subtitle)
 
         j_synsm = ''
         if 'synopsis' in prog_item:
-            j_synsm = unicode(prog_item['synopsis']).encode('ascii', 'ignore')
+            j_synsm = prog_item['synopsis']
         if 'synopses' in prog_item:
             if 'small' in prog_item['synopses']:
-                j_synsm = unicode(prog_item['synopses']['small']).encode('ascii', 'ignore')
+                j_synsm = prog_item['synopses']['small']
 
         j_duration = ''
         if 'versions' in prog_item:
@@ -2214,19 +2227,19 @@ def print_audio_listing_rows(j_rows):
 
         j_title = ''
         if 'title' in prog_item:
-            j_title = unicode(prog_item['title']).encode('ascii', 'ignore')
+            j_title = prog_item['title']
         j_subtitle = ''
         if 'subtitle' in prog_item:
-            j_subtitle = unicode(prog_item['subtitle']).encode('ascii', 'ignore')
+            j_subtitle = prog_item['subtitle']
         b64_title = base64.b64encode(j_title)
         b64_subtitle = base64.b64encode(j_subtitle)
 
         j_synsm = ''
         if 'synopsis' in prog_item:
-            j_synsm = unicode(prog_item['synopsis']).encode('ascii', 'ignore')
+            j_synsm = prog_item['synopsis']
         if 'synopses' in prog_item:
             if 'small' in prog_item['synopses']:
-                j_synsm = unicode(prog_item['synopses']['small']).encode('ascii', 'ignore')
+                j_synsm = prog_item['synopses']['small']
 
         j_duration = ''
         if 'versions' in prog_item:
@@ -2669,6 +2682,7 @@ def write_queue(queue, queue_file_name):
 if len(sys.argv) <= 1:
     DOCROOT = os.environ.get('DOCUMENT_ROOT', DOCROOT_DEFAULT)
     cgitb.enable(display=0, logdir=DOCROOT + '/python_errors', format='html')
+    sys.stdout = codecs.getwriter('utf8')(sys.stdout)
     web_interface()
 
 else:
