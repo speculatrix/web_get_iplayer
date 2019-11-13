@@ -2,13 +2,13 @@ FROM debian:latest
 MAINTAINER Christian Ashby <docker@cashby.me.uk>
 # Install OS package prerequisites and configure apache
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get install -y screen apache2 python wget build-essential cron rsyslog git && \
+    apt-get install -y screen apache2 python python-psutil wget build-essential cron rsyslog git && \
     mkdir /var/lock/apache2 && \
     a2enmod cgi && \
     echo "ServerName web_get_iplayer" >> /etc/apache2/sites-enabled/000-default.conf
 # Install ffmpeg from repo
 RUN apt-get update && \
-    apt-get install -y ffmpeg rtmpdump
+    apt-get install -y ffmpeg rtmpdump 
 COPY ts-to-mp4.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/ts-to-mp4.sh
 # Install development prerequisites
