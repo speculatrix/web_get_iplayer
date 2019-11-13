@@ -6,19 +6,12 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     mkdir /var/lock/apache2 && \
     a2enmod cgi && \
     echo "ServerName web_get_iplayer" >> /etc/apache2/sites-enabled/000-default.conf
-# Install ffmpeg from repo
 RUN apt-get update && \
     apt-get install -y ffmpeg rtmpdump 
 COPY ts-to-mp4.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/ts-to-mp4.sh
 # Install development prerequisites
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libssl-dev libhtml-parser-perl libhttp-cookies-perl libwww-perl libxml-simple-perl libxml-libxml-perl
-# Install the rtmpdump package (TODO: need a -latest.tgz download ideally!)
-#WORKDIR /tmp
-#wget http://rtmpdump.mplayerhq.hu/download/rtmpdump-2.3.tgz && \
-#    tar xvzf rtmpdump-2.3.tgz && \
-#RUN git clone git://git.ffmpeg.org/rtmpdump && \
-#    cd rtmpdump && make && make install && cd .. && rm -rf rtmpdump*
 # Install the get_iplayer script and run it to ensure we have the appropriate cache set up in our ~
 WORKDIR /usr/lib/cgi-bin
 RUN wget https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer && \
