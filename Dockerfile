@@ -20,7 +20,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libssl-dev libhtml-parser-
 #RUN git clone git://git.ffmpeg.org/rtmpdump && \
 #    cd rtmpdump && make && make install && cd .. && rm -rf rtmpdump*
 # Install the get_iplayer script and run it to ensure we have the appropriate cache set up in our ~
-#WORKDIR /usr/lib/cgi-bin
+WORKDIR /usr/lib/cgi-bin
 RUN wget https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer && \
     chmod +x get_iplayer
 # Install the web_get_iplayer script
