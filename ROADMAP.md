@@ -8,6 +8,15 @@ Plans and history for this program
 
 In no particular order
 
+### Chromecast support
+
+Having successfully implemented it in my TV Headend EPG tool
+(https://github.com/speculatrix/tvh_epg) I will strongly consider
+doing it here; however, it will need the transcoding features to
+be massively improved so make them robust, so as to support the
+codecs that Chromecast works with.
+
+
 ### Automatic favourite downloading
 check for new programs matching your favourites and download them
 
