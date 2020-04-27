@@ -2,9 +2,10 @@ FROM debian:latest
 MAINTAINER Christian Ashby <docker@cashby.me.uk>
 # Install OS package prerequisites and configure apache
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get install -y screen apache2 python python-psutil wget build-essential cron rsyslog git && \
+    apt-get install -y apache2 python python-psutil wget build-essential cron rsyslog git && \
     mkdir /var/lock/apache2 && \
     a2enmod cgi && \
+    a2enmod rewrite && \
     echo "ServerName web_get_iplayer" >> /etc/apache2/sites-enabled/000-default.conf
 RUN apt-get update && \
     apt-get install -y ffmpeg rtmpdump 
@@ -23,6 +24,7 @@ RUN chmod +x web_get_iplayer.py
 COPY web_get_iplayer.cron.sh .
 RUN chmod +x web_get_iplayer.cron.sh
 COPY _etc_cron.d_web_get_iplayer /etc/cron.d/web_get_iplayer 
+COPY 000-default.conf /etc/apache2/sites-available/000-default.conf
 RUN chmod g-w /etc/cron.d/web_get_iplayer
 # Configure web_get_iplayer
 WORKDIR /var/lib
