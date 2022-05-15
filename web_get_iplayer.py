@@ -41,7 +41,7 @@ import  base64
 import  cgi
 import  cgitb
 import  codecs
-import  ConfigParser
+import  configparser
 from collections import OrderedDict
 #import datetime
 import  hashlib
@@ -56,8 +56,7 @@ import  signal
 import  stat
 import  sys
 import  time
-import  urllib2
-
+import  urllib3
 
 
 
@@ -65,7 +64,7 @@ import  urllib2
 # Globals
 
 # use ConfigParse to manage the settings
-my_settings = ConfigParser.ConfigParser()
+my_settings = configparser.ConfigParser()
 
 PATH_OF_SCRIPT = os.path.dirname(os.path.realpath(__file__))
 
@@ -81,7 +80,7 @@ dbg_level = 0   # default value no debug
 # the HTML document root (please make a subdirectory called python_errors off webroot which is writable by web daemon)
 # this is hopefully the only thing you ever need to change
 #DOCROOT_DEFAULT   = '/var/www/html'
-DOCROOT_DEFAULT   = '/var/www/iplayer/htdocs'
+DOCROOT_DEFAULT   = '/home/iplayer'
 
 # state files, queues, logs and so on are stored in this directory
 CONTROL_DIR       = '/var/lib/web_get_iplayer'
@@ -431,7 +430,7 @@ Please do the following - needs root:
     for setting in SETTINGS_DEFAULTS:
         try:
             my_settings.get(SETTINGS_SECTION, setting)
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             print('Warning, there is no settings value for "%s", please go to settings, check values and save<br />' % (setting, ))
 
     ########
@@ -439,11 +438,11 @@ Please do the following - needs root:
     iplayer_directory = ''
     try:
         iplayer_directory = my_settings.get(SETTINGS_SECTION, 'iplayer_directory')
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         print('Config appears incomplete, please go to settings and submit to save')
         config_bad = 1
         return config_bad
-    except ConfigParser.NoSectionError:
+    except configparser.NoSectionError:
         print('Config appears incomplete, please go to settings and submit to save')
         config_bad = 1
         return config_bad
@@ -1895,7 +1894,7 @@ def page_settings():
         try:
             my_settings.read(config_file_name)
 
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             print('Fatal Error, can\'t open %s for reading <br />' % config_file_name)
             return -1
     else:
@@ -1930,7 +1929,7 @@ def page_settings():
                 setting_value = my_settings.get(SETTINGS_SECTION, setting)
             #except AttributeError:
             #except NameError:
-            except ConfigParser.NoOptionError:
+            except configparser.NoOptionError:
                 print('failed getting setting %s from config, setting to default' % setting)
                 # otherwise set it to a default value
                 try:
@@ -1952,7 +1951,7 @@ def page_settings():
     print('  </table>')
     print('  </form>')
 
-    with open(config_file_name, 'wb') as configfile:
+    with open(config_file_name, 'w') as configfile:
         my_settings.write(configfile)
 
 
@@ -2685,7 +2684,8 @@ def write_queue(queue, queue_file_name):
 if len(sys.argv) <= 1:
     DOCROOT = os.environ.get('DOCUMENT_ROOT', DOCROOT_DEFAULT)
     cgitb.enable(display=0, logdir=DOCROOT + '/python_errors', format='html')
-    sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+    sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
+    #sys.stdout = codecs.getwriter('utf8')(sys.stdout)
     web_interface()
 
 else:
