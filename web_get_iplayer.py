@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 """
 For full details, see the README.md in
 https://github.com/speculatrix/web_get_iplayer
@@ -273,7 +273,7 @@ def get_github_hash_self():
         githubhash = json_data['sha']
 
     except urllib2.HTTPError:
-        print 'get_github_hash_self: Exception urllib2.HTTPError'
+        print('get_github_hash_self: Exception urllib2.HTTPError')
         githubhash = 'urllib2.HTTPError:'
 
 
@@ -292,7 +292,7 @@ def get_github_hash_get_iplayer():
         githubhash = json_data['sha']
 
     except urllib2.HTTPError:
-        print 'get_github_hash_self: Exception urllib2.HTTPError'
+        print('get_github_hash_self: Exception urllib2.HTTPError')
         githubhash = 'urllib2.HTTPError:'
 
 
@@ -362,9 +362,9 @@ def check_load_config_file():
     try:
         qdir_stat = os.stat(CONTROL_DIR)
     except OSError:
-        print '''Error, directory "%s" doesn\'t appear to exist.
+        print('''Error, directory "%s" doesn\'t appear to exist.
 Please do the following - needs root:
-\tsudo mkdir "%s" && sudo chgrp %s "%s" && sudo chmod g+ws "%s"''' % (CONTROL_DIR, CONTROL_DIR, str(my_egroup_id), CONTROL_DIR, CONTROL_DIR)
+\tsudo mkdir "%s" && sudo chgrp %s "%s" && sudo chmod g+ws "%s"''' % (CONTROL_DIR, CONTROL_DIR, str(my_egroup_id), CONTROL_DIR, CONTROL_DIR) )
         config_bad = -1
         return config_bad       # error so severe, no point in continuing
 
@@ -372,12 +372,12 @@ Please do the following - needs root:
     # owned by me and writable by me, or same group as me and writable through that group?
     if ( (qdir_stat.st_uid == my_euser_id  and (qdir_stat.st_mode & stat.S_IWUSR) != 0)
          or (qdir_stat.st_gid == my_egroup_id and (qdir_stat.st_mode & stat.S_IWGRP) != 0) ):
-        #print 'OK, %s exists and is writable' % CONTROL_DIR
+        #print('OK, %s exists and is writable' % CONTROL_DIR)
         config_bad = 0
     else:
-        print '''Error, won\'t be able to write to directory "%s".
+        print('''Error, won\'t be able to write to directory "%s".
 Please do the following:
-\tsudo chgrp %s "%s" && sudo chmod g+ws "%s"''' % (CONTROL_DIR, str(my_egroup_id), CONTROL_DIR, CONTROL_DIR, )
+\tsudo chgrp %s "%s" && sudo chmod g+ws "%s"''' % (CONTROL_DIR, str(my_egroup_id), CONTROL_DIR, CONTROL_DIR, ) )
         config_bad = -1
         return config_bad       # error so severe, no point in continuing
 
@@ -385,16 +385,16 @@ Please do the following:
     ########
     # verify the settings file exists and is writable
     if not os.path.isfile(config_file_name):
-        print '''Error, can\'t open "%s" for reading.
+        print('''Error, can\'t open "%s" for reading.
 Please do the following - needs root:
-\tsudo touch "%s" && sudo chgrp %s "%s" && sudo chmod g+w "%s"''' % (config_file_name, config_file_name, str(my_egroup_id), config_file_name, config_file_name)
+\tsudo touch "%s" && sudo chgrp %s "%s" && sudo chmod g+w "%s"''' % (config_file_name, config_file_name, str(my_egroup_id), config_file_name, config_file_name) )
         config_bad = -1
         return config_bad
 
     # file is zero bytes?
     config_stat = os.stat(config_file_name)
     if config_stat.st_size == 0:
-        print 'Config file is empty, please go to settings and submit to save\n'
+        print('Config file is empty, please go to settings and submit to save\n')
         config_bad = 1
         return config_bad
 
@@ -403,9 +403,9 @@ Please do the following - needs root:
          or ( config_stat.st_gid == my_egroup_id and (config_stat.st_mode & stat.S_IWGRP) != 0) ):
         config_bad = 0
     else:
-        print '''Error, won\'t be able to write to file "%s"
+        print('''Error, won\'t be able to write to file "%s"
 Please do the following - needs root:
-\tsudo chgrp %s "%s" && sudo chmod g+w %s''' % (config_file_name, config_file_name, my_egroup_id, config_file_name, )
+\tsudo chgrp %s "%s" && sudo chmod g+w %s''' % (config_file_name, config_file_name, my_egroup_id, config_file_name, ) )
         config_bad = 1
         return config_bad
 
@@ -414,16 +414,16 @@ Please do the following - needs root:
     # verify can open the config file, by reading the contents
     try:
         my_settings.read(config_file_name)
-        #print 'Debug, successfully opened %s' % (config_file_name, )
+        #print('Debug, successfully opened %s' % (config_file_name, ) )
         config_bad = 0
 
     except NameError:
-        print 'Fatal Error, failed loading config %s\n' % config_file_name
+        print('Fatal Error, failed loading config %s\n' % config_file_name)
         config_bad = 1
         return config_bad
     except AttributeError:
         config_bad = 1
-        print 'Fatal Error, config %s missing item\n' % config_file_name
+        print('Fatal Error, config %s missing item\n' % config_file_name)
         return config_bad
 
     # check that all the settings we know about were actually created
@@ -432,7 +432,7 @@ Please do the following - needs root:
         try:
             my_settings.get(SETTINGS_SECTION, setting)
         except ConfigParser.NoOptionError:
-            print 'Warning, there is no settings value for "%s", please go to settings, check values and save<br />' % (setting, )
+            print('Warning, there is no settings value for "%s", please go to settings, check values and save<br />' % (setting, ))
 
     ########
     # verify can write in the directory where files are downloaded
@@ -440,11 +440,11 @@ Please do the following - needs root:
     try:
         iplayer_directory = my_settings.get(SETTINGS_SECTION, 'iplayer_directory')
     except ConfigParser.NoOptionError:
-        print 'Config appears incomplete, please go to settings and submit to save'
+        print('Config appears incomplete, please go to settings and submit to save')
         config_bad = 1
         return config_bad
     except ConfigParser.NoSectionError:
-        print 'Config appears incomplete, please go to settings and submit to save'
+        print('Config appears incomplete, please go to settings and submit to save')
         config_bad = 1
         return config_bad
 
@@ -452,9 +452,9 @@ Please do the following - needs root:
     try:
         idir_stat = os.stat(iplayer_directory)
     except OSError:
-        print '''Error, directory %s doesn\'t appear to exist.
+        print('''Error, directory %s doesn\'t appear to exist.
 Please execute the following - needs root:
-# sudo mkdir %s && sudo chgrp %d %s && sudo chmod g+ws %s''' % (iplayer_directory, iplayer_directory, my_egroup_id, iplayer_directory, iplayer_directory, )
+# sudo mkdir %s && sudo chgrp %d %s && sudo chmod g+ws %s''' % (iplayer_directory, iplayer_directory, my_egroup_id, iplayer_directory, iplayer_directory, ) )
         config_bad = 1
         return config_bad
 
@@ -462,11 +462,11 @@ Please execute the following - needs root:
     if ( ( idir_stat.st_uid == my_euser_id and (idir_stat.st_mode & stat.S_IWUSR) != 0)
          or ( idir_stat.st_gid == my_egroup_id and (idir_stat.st_mode & stat.S_IWGRP) != 0) ):
         config_bad = 0
-        #print 'Debug, directory "%s" exists and is writable' % (iplayer_directory, )
+        #print('Debug, directory "%s" exists and is writable' % (iplayer_directory, ))
     else:
-        print '''Error, won\'t be able to write to %s
+        print('''Error, won\'t be able to write to %s
 Please do the following - needs root:
-# sudo chgrp %d %s && sudo chmod g+ws %s''' % (iplayer_directory, my_egroup_id, iplayer_directory, iplayer_directory, )
+# sudo chgrp %d %s && sudo chmod g+ws %s''' % (iplayer_directory, my_egroup_id, iplayer_directory, iplayer_directory, ))
         config_bad = 1
         return config_bad
 
@@ -478,53 +478,53 @@ Please do the following - needs root:
         # owned by me and writable by me, or same group as me and writable through that group?
         if ( ( qfile_stat.st_uid == my_euser_id  and (qfile_stat.st_mode & stat.S_IWUSR) != 0)
              or ( qfile_stat.st_gid == my_egroup_id and (qfile_stat.st_mode & stat.S_IWGRP) != 0) ):
-            #print 'OK, %s exists and is writable' % (s_q_f_name, )
+            #print('OK, %s exists and is writable' % (s_q_f_name, ))
             config_bad = 0
         else:
-            print '''Error, won\'t be able to write to %s
+            print('''Error, won\'t be able to write to %s
 Please do the following - needs root:
-# sudo chgrp %d %s && sudo chmod g+w %s''' % (s_q_f_name, my_egroup_id, CONTROL_DIR, s_q_f_name, )
+# sudo chgrp %d %s && sudo chmod g+w %s''' % (s_q_f_name, my_egroup_id, CONTROL_DIR, s_q_f_name, ) )
             config_bad = 1
             return config_bad
 
     except OSError:     # it's fine for file to not exist
-        #print 'OK, %s doesn\'t exist' % (s_q_f_name, )
+        #print('OK, %s doesn\'t exist' % (s_q_f_name, ))
         config_bad = 0
 
-    #print 'Debug, dropped through to end of check_load_config_file'
+    #print('Debug, dropped through to end of check_load_config_file')
 
 
     # verify that get_iplayer has a directory to write to
     get_iplayer_dir = os.path.join(expanduser("~"), '.get_iplayer', )
     if not os.path.isdir(get_iplayer_dir):
-        print '''Error, directory %s doesn\'t appear to exist.
+        print('''Error, directory %s doesn\'t appear to exist.
 Please do the following - needs root:
-# sudo mkdir %s && sudo chown %d:%d %s && sudo chmod g+ws %s''' % (get_iplayer_dir, get_iplayer_dir, my_euser_id, my_egroup_id, get_iplayer_dir, get_iplayer_dir, )
+# sudo mkdir %s && sudo chown %d:%d %s && sudo chmod g+ws %s''' % (get_iplayer_dir, get_iplayer_dir, my_euser_id, my_egroup_id, get_iplayer_dir, get_iplayer_dir, ) )
         config_bad = 1
 
 
     # check that the get_iplayer program exists
     get_iplayer_binary = my_settings.get(SETTINGS_SECTION, 'get_iplayer')
     if not os.path.isfile(get_iplayer_binary):
-        print '''Error, get_iplayer program not found.
+        print('''Error, get_iplayer program not found.
 Please fix the configuration for get_iplayer below, or download the program and make it executable with the following commands.
 # sudo wget -O %s https://raw.githubusercontent.com/get-iplayer/get_iplayer/master/get_iplayer
-# sudo chmod ugo+x %s''' % (get_iplayer_binary, get_iplayer_binary, )
+# sudo chmod ugo+x %s''' % (get_iplayer_binary, get_iplayer_binary, ) )
         config_bad = 1
     # check that the get_iplayer program is executable
     if os.path.isfile(get_iplayer_binary) and not os.access(get_iplayer_binary, os.X_OK):
-        print '''Error, get_iplayer program is not executable.
+        print('''Error, get_iplayer program is not executable.
 Make it executable with the following command:
-# sudo chmod ugo+x %s''' % (get_iplayer_binary, )
+# sudo chmod ugo+x %s''' % (get_iplayer_binary, ))
         config_bad = 1
 
 
     # need swffile for the rtmpdump program to work
     swffile = expanduser("~") + '/' + '.swfinfo'
     if os.path.isfile(get_iplayer_binary) and not os.path.isfile(swffile):
-        print '''Error, file %s doesn\'t appear to exist.
+        print('''Error, file %s doesn\'t appear to exist.
 Please do the following - needs root:
-# sudo touch %s && sudo chgrp %d %s && sudo chmod g+w %s''' % (swffile, swffile, my_egroup_id, swffile, swffile, )
+# sudo touch %s && sudo chgrp %d %s && sudo chmod g+w %s''' % (swffile, swffile, my_egroup_id, swffile, swffile, ))
         config_bad = 1
 
 
@@ -541,11 +541,11 @@ def page_kill(p_unix_pid):
             if p_unix_pid > 0:
                 os.kill(unix_pid, signal.SIGQUIT)
                 # FIXME! this should really check the process to verify that it's the get_iplayer task!
-                print '<p><b>Killed</b>, unix pid %d was sent a CTRL-C</p>' % (unix_pid, )
+                print('<p><b>Killed</b>, unix pid %d was sent a CTRL-C</p>' % (unix_pid, ))
         except ValueError:
-            print '<p><b>Error</b>, unix pid %s supplied was invalid</p>' % (p_unix_pid, )
+            print('<p><b>Error</b>, unix pid %s supplied was invalid</p>' % (p_unix_pid, ))
     else:
-        print '<p><b>Error</b>, no unix pid supplied</p>'
+        print('<p><b>Error</b>, no unix pid supplied</p>')
 
 
 #####################################################################################################################
@@ -562,7 +562,7 @@ def cron_run_download():
     if os.path.isfile(a_q_f_name):
         aqi = read_queue(active_queue, a_q_f_name)
         if aqi > 0:
-            print 'Info, active queue is not empty, so cron downloads terminating'
+            print('Info, active queue is not empty, so cron downloads terminating')
             return 0
 
 
@@ -573,10 +573,10 @@ def cron_run_download():
     if os.path.isfile(p_q_f_name):
         pqi = read_queue(pend_queue, p_q_f_name)
         if pqi == -1:
-            print 'Error, aborting cron job, couldn\'t read pending queue file'
+            print('Error, aborting cron job, couldn\'t read pending queue file')
             exit(1)
     else:
-        print 'Info, pending queue file didn\'t exist, it will be created'
+        print('Info, pending queue file didn\'t exist, it will be created')
 
     # rename the submission queue file to a temporary name, then sleep.
     # this is to mitigate the race condition of the web interface
@@ -592,14 +592,14 @@ def cron_run_download():
         os.remove(s_q_f_tmp_name)
 
     if sqi == -1:
-        print 'Warn, couldn\'t read submission queue file'
+        print('Warn, couldn\'t read submission queue file')
     elif sqi > 0:
-        print 'Info, sub_queue is now %s' % (str(sub_queue), )
+        print('Info, sub_queue is now %s' % (str(sub_queue), ))
         pend_queue.extend(sub_queue)
         if write_queue(pend_queue, p_q_f_name) == -1:
-            print 'Error, failed writing pending queue item to file %s' % (p_q_f_name, )
+            print('Error, failed writing pending queue item to file %s' % (p_q_f_name, ))
     else: # sqi == 0
-        print 'Info, submission queue file is empty'
+        print('Info, submission queue file is empty')
 
 
     # recently completed
@@ -609,10 +609,10 @@ def cron_run_download():
     if os.path.isfile(r_c_f_name):
         rci = read_queue(recent_queue, r_c_f_name)
         if rci == -1:
-            print 'Error, aborting cron job, couldn\'t read recent items file'
+            print('Error, aborting cron job, couldn\'t read recent items file')
             exit(1)
     else:
-        print 'Info, recent items list hasn\'t been created'
+        print('Info, recent items list hasn\'t been created')
 
 
     # transcode submissions
@@ -622,9 +622,9 @@ def cron_run_download():
     if os.path.isfile(t_s_f_name):
         tsi = read_queue(trnscd_sub_queue, t_s_f_name)
         if tsi == -1:
-            print 'Info, cron job, couldn\'t read trancode submission file'
+            print('Info, cron job, couldn\'t read trancode submission file')
     else:
-        print 'Info, transcode submission queue hasn\'t been created'
+        print('Info, transcode submission queue hasn\'t been created')
 
 
     ## now start processing the queues ##
@@ -634,31 +634,31 @@ def cron_run_download():
         # pop the first item off the pending queue, and rewrite it
         first_item = pend_queue.pop(0)
         if write_queue(pend_queue, p_q_f_name) == -1:
-            print 'Error, failed writing pending queue item to file %s' % (p_q_f_name, )
+            print('Error, failed writing pending queue item to file %s' % (p_q_f_name, ))
 
         first_item['TT_started'] = time.time()
         first_item['status'] = 'now active'
-        print 'pending queue now %s' % str(pend_queue)
+        print('pending queue now %s' % str(pend_queue))
         active_queue.append(first_item)
-        print 'active queue now %s' % str(active_queue)
+        print('active queue now %s' % str(active_queue))
         if write_queue(pend_queue, p_q_f_name) == -1:
-            print 'Error, failed writing submission queue item to %s' % (p_q_f_name, )
+            print('Error, failed writing submission queue item to %s' % (p_q_f_name, ))
 
         # update active queue
         if write_queue(active_queue, a_q_f_name) != -1:
-            print 'Success, written active item %s to %s' % (str(active_queue), a_q_f_name, )
+            print('Success, written active item %s to %s' % (str(active_queue), a_q_f_name, ))
     #else:
-        #print 'Pending queue is empty'
+        #print('Pending queue is empty')
 
-    print 'first item on queue %s' % str(first_item)
+    print('first item on queue %s' % str(first_item))
     if len(first_item) > 0:
     #if first_item:
-        print 'Info, will start downloading %s' % (str(first_item), )
+        print('Info, will start downloading %s' % (str(first_item), ))
         first_item['status'] = 'attempting download'
 
         log_dir = os.path.join(CONTROL_DIR, 'logs')
         if not os.path.isdir(log_dir):
-            print 'Info, CONTROL_DIR %s, need to make directory %s' % (CONTROL_DIR, log_dir, )
+            print('Info, CONTROL_DIR %s, need to make directory %s' % (CONTROL_DIR, log_dir, ))
             os.mkdir(log_dir)
             #os.lchmod(log_dir, 0775)
 
@@ -687,7 +687,7 @@ def cron_run_download():
         cmd = cmd + ' >> ' + log_file + ' 2>&1'
 
         if dbg_level > 0:
-            print 'calling shell to do %s' % (cmd, )
+            print('calling shell to do %s' % (cmd, ))
         os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
         # FIXME! set the directory to a subdirectory matching
@@ -698,7 +698,7 @@ def cron_run_download():
             first_item['unix_pid'] = get_iplayer_pid
             # update active queue
             if write_queue(active_queue, a_q_f_name) != -1:
-                print 'Success, written active item %s to %s' % (str(active_queue), a_q_f_name, )
+                print('Success, written active item %s to %s' % (str(active_queue), a_q_f_name, ))
 
             os.wait()
         else:   # the sub process runs get_iplayer
@@ -709,7 +709,7 @@ def cron_run_download():
             #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
 
             if sys_error != 0:
-                print "Error, get_iplayer returned error code %d" % (sys_error, )
+                print('Error, get_iplayer returned error code %d' % (sys_error, ))
                 first_item['status'] = 'execution of get_iplayer failed with error %d' % (sys_error, )
             else:
                 first_item['status'] = 'download probably successful'
@@ -721,9 +721,9 @@ def cron_run_download():
             active_queue = []
             active_file = os.path.join(CONTROL_DIR, ACTIVE_QUEUE)
             if write_queue(active_queue, active_file) == -1:
-                print 'Error, failed to write empty active file'
+                print('Error, failed to write empty active file')
             else:
-                print 'Success, written empty active file'
+                print('Success, written empty active file')
 
             # attempt to get node number of the downloaded file
             # as this makes it much easier to track if we end up
@@ -736,16 +736,16 @@ def cron_run_download():
             recent_queue.append(first_item)
             # shorten recent queue to max allowed in settings
             while len(recent_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
-                print 'removing oldest item from recent items queue'
+                print('removing oldest item from recent items queue')
                 recent_queue.pop(0)
             if write_queue(recent_queue, r_c_f_name) == -1:
-                print 'Error, failed to write recent items file'
+                print('Error, failed to write recent items file')
             else:
-                print 'Success, written recent items file'
+                print('Success, written recent items file')
 
             # if transcode was requested, append to queue
             if 'trnscd_cmd_method' in first_item and first_item['trnscd_cmd_method'] != '':
-                print 'Info, trnscd_cmd_method was set, adding item to transcode queue'
+                print('Info, trnscd_cmd_method was set, adding item to transcode queue')
                 # FIXME! check that the queue doesn't already contain an identical task
                 trnscd_item = { 'inode'             : first_item['inode'],
                                 'img_inode'         : first_item['img_inode'],
@@ -762,9 +762,9 @@ def cron_run_download():
                               }
                 trnscd_sub_queue.append(trnscd_item)
                 if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
-                    print 'Error, failed to write transcode submission queue'
+                    print('Error, failed to write transcode submission queue')
                 else:
-                    print 'Success, written transcode submission queue'
+                    print('Success, written transcode submission queue')
 
     return 0
 
@@ -784,13 +784,13 @@ def cron_run_transcode():
     if os.path.isfile(t_a_f_name):
         tai = read_queue(trnscd_act_queue, t_a_f_name)
         if tai == -1:
-            print 'Info, cron job, couldn\'t read trancode active file'
+            print('Info, cron job, couldn\'t read trancode active file')
     else:
-        print 'Info, transcode active queue hasn\'t been created'
+        print('Info, transcode active queue hasn\'t been created')
 
     # FIXME! allow parallel transcodes
     if len(trnscd_act_queue) > 0:
-        print 'Info, a transcode is already active'
+        print('Info, a transcode is already active')
         return 0
 
 
@@ -801,9 +801,9 @@ def cron_run_transcode():
     if os.path.isfile(t_s_f_name):
         tsi = read_queue(trnscd_sub_queue, t_s_f_name)
         if tsi == -1:
-            print 'Info, cron job, couldn\'t read trancode submission file'
+            print('Info, cron job, couldn\'t read trancode submission file')
     else:
-        print 'Info, transcode submission queue hasn\'t been created'
+        print('Info, transcode submission queue hasn\'t been created')
 
 
     # transcode recent
@@ -813,29 +813,29 @@ def cron_run_transcode():
     if os.path.isfile(t_s_f_name):
         tri = read_queue(trnscd_rec_queue, t_r_f_name)
         if tri == -1:
-            print 'Info, cron job, couldn\'t read trancode recents file'
+            print('Info, cron job, couldn\'t read trancode recents file')
     else:
-        print 'Info, transcode submission recents hasn\'t been created'
+        print('Info, transcode submission recents hasn\'t been created')
 
 
     ######################### see if anything needs transcoding
 
     if len(trnscd_sub_queue):
-        print 'Info, transcode submission queue wasn\'t empty'
+        print('Info, transcode submission queue wasn\'t empty')
         first_item = trnscd_sub_queue.pop(0)
         if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
-            print 'Error, failed writing transcode submission queue to file %s' % (t_s_f_name, )
+            print('Error, failed writing transcode submission queue to file %s' % (t_s_f_name, ))
 
         trnscd_act_queue.append(first_item)
         first_item['TT_started'] = time.time()
         if write_queue(trnscd_act_queue, t_a_f_name) == -1:
-            print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
+            print('Error, failed writing transcode active queue to file %s' % (t_a_f_name, ))
 
         # break the file name up into parts, create a new file name according
         # to how we transcode it, and generate a command to transcode
         orig_file = find_file_name_by_inode(int(first_item['inode']))
         if orig_file == "":
-            print 'Error, failed to find file whose inode is %s' % (first_item['inode'], )
+            print('Error, failed to find file whose inode is %s' % (first_item['inode'], ))
             first_item['status'] = 'failed to find file'
         else:
             first_item['status'] = 'attempting transcode'
@@ -859,7 +859,7 @@ def cron_run_transcode():
 
             log_dir = os.path.join(CONTROL_DIR, 'logs')
             if not os.path.isdir(log_dir):
-                print 'Info, CONTROL_DIR %s, need to make directory %s' % (CONTROL_DIR, log_dir, )
+                print('Info, CONTROL_DIR %s, need to make directory %s' % (CONTROL_DIR, log_dir, ))
                 os.mkdir(log_dir)
                 #os.lchmod(log_dir, 0775)
             log_file = os.path.join(log_dir, first_item['pid'],)
@@ -869,7 +869,7 @@ def cron_run_transcode():
 
 
             #if dbg_level > 0:
-            print 'calling shell to do %s' % (cmd, )
+            print('calling shell to do %s' % (cmd, ))
             os.chdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
 
             # FIXME! set the directory to a subdirectory matching...
@@ -878,7 +878,7 @@ def cron_run_transcode():
             #subprocess.check_call(cmd, stdout=log_file, stderror=log_file)
             sys_error = os.system(cmd)
             if sys_error != 0:
-                print "Error, transcode returned error code %d" % (sys_error, )
+                print('Error, transcode returned error code %d' % (sys_error, ))
                 first_item['status'] = 'execution of transcode script failed with error %d' % (sys_error, )
             else:
                 first_item['status'] = 'transcode probably successful'
@@ -887,29 +887,29 @@ def cron_run_transcode():
             if first_item['img_inode'] != '':
                 old_image = find_file_name_by_inode(int(first_item['img_inode']))
             new_image = '%s%s.jpg' % (trnscd_prefix, fnameadd, )
-            print 'Debug, trnscd_prefix %s, fnameadd %s, copyfile "%s" "%s"' % (trnscd_prefix, fnameadd, old_image, new_image, )
+            print('Debug, trnscd_prefix %s, fnameadd %s, copyfile "%s" "%s"' % (trnscd_prefix, fnameadd, old_image, new_image, ))
             if os.path.isfile(new_image):
-                print 'Error, new_image "%s" file exists' % (new_image, )
+                print('Error, new_image "%s" file exists' % (new_image, ))
                 new_image = ''
             if old_image != '' and new_image != '':
                 try:
                     shutil.copyfile(old_image, new_image)
                 except IOError: # need to prevent copyfile from crashing the script
-                    print 'Error, shutil_copyfile failed with exception'
+                    print('Error, shutil_copyfile failed with exception')
 
 
         trnscd_act_queue = []
         if write_queue(trnscd_act_queue, t_a_f_name) == -1:
-            print 'Error, failed writing transcode active queue to file %s' % (t_a_f_name, )
+            print('Error, failed writing transcode active queue to file %s' % (t_a_f_name, ))
 
         first_item['TT_finished'] = time.time()
         trnscd_rec_queue.append(first_item)
         # shorten recent queue to max allowed in settings
         while len(trnscd_rec_queue) >= int(my_settings.get(SETTINGS_SECTION, 'max_recent_items')):
-            print 'removing oldest item from transcode recent items queue'
+            print('removing oldest item from transcode recent items queue')
             trnscd_rec_queue.pop(0)
         if write_queue(trnscd_rec_queue, t_r_f_name) == -1:
-            print 'Error, failed writing transcode recents list to file %s' % (t_r_f_name, )
+            print('Error, failed writing transcode recents list to file %s' % (t_r_f_name, ))
 
     return 0
 
@@ -926,26 +926,26 @@ def delete_files_by_inode(p_dir, inode_list, del_img_flag):
         full_file_path = os.path.join(sub_dir, file_name)
         if os.path.isfile(full_file_path):    # prevent statting a file as may be a jpg we just deleted
             file_stat = os.stat(full_file_path)
-            #print 'considering file %s which has inode %d\n<br >' % (full_file_path, file_stat[stat.ST_INO], )
+            #print('considering file %s which has inode %d\n<br >' % (full_file_path, file_stat[stat.ST_INO], ))
 
             if str(file_stat[stat.ST_INO]) in inode_list:
-                print 'file %s is being deleted \n<br >' % (full_file_path, )
+                print('file %s is being deleted \n<br >' % (full_file_path, ))
                 try:
                     os.remove(full_file_path)
                 except OSError as err: # for some reason the above works but throws exception
-                    print 'error deleting %s code %s\n<br />' % (full_file_path, err, )
+                    print('error deleting %s code %s\n<br />' % (full_file_path, err, ))
 
                 if del_img_flag:
                     file_prefix, _ignore = os.path.splitext(full_file_path)
                     image_file_name = file_prefix + '.jpg'
                     if os.path.isfile(image_file_name):
-                        print 'image %s is being deleted \n<br >' % (image_file_name, )
+                        print('image %s is being deleted \n<br >' % (image_file_name, ))
                         try:
                             os.remove(image_file_name)
                         except OSError: # for some reason the above works but throws exception
-                            print 'error deleting %s\n<br />' % (image_file_name, )
+                            print('error deleting %s\n<br />' % (image_file_name, ))
                     else:
-                        print 'there was no image file %s to be deleted\n<br >' % (image_file_name, )
+                        print('there was no image file %s to be deleted\n<br >' % (image_file_name, ))
 
 
 #####################################################################################################################
@@ -958,15 +958,15 @@ def find_media_file_inode_by_pid(p_pid):
 
     file_inode = 0
 
-    print 'Debug, find_media_file_inode_by_pid pid "%s"' % (p_pid, )
+    print('Debug, find_media_file_inode_by_pid pid "%s"' % (p_pid, ))
 
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
     for file_name in file_list:
         file_prefix, file_ext = os.path.splitext(file_name)
-        #print 'Debug, find_media_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, )
+        #print('Debug, find_media_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, ))
         if p_pid in file_prefix and file_ext in MEDIA_FILE_SUFFIXES:
             file_inode = os.stat(file_name).st_ino
-            print 'Debug, found inode %d for pid %s' % (file_inode, p_pid)
+            print('Debug, found inode %d for pid %s' % (file_inode, p_pid))
 
     return file_inode
 
@@ -982,15 +982,15 @@ def find_image_file_inode_by_pid(p_pid):
 
     file_inode = 0
 
-    print 'Debug, find_image_file_inode_by_pid pid "%s"' % (p_pid, )
+    print('Debug, find_image_file_inode_by_pid pid "%s"' % (p_pid, ))
 
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
     for file_name in file_list:
         file_prefix, file_ext = os.path.splitext(file_name)
-        #print 'Debug, find_image_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, )
+        #print('Debug, find_image_file_inode_by_pid file_prefix "%s" has ext "%s"' % (file_prefix, file_ext, ))
         if p_pid in file_prefix and file_ext in IMAGE_FILE_SUFFIXES:
             file_inode = os.stat(file_name).st_ino
-            print 'Debug, found inode %d for pid %s' % (file_inode, p_pid)
+            print('Debug, found inode %d for pid %s' % (file_inode, p_pid))
 
     return file_inode
 
@@ -1002,7 +1002,7 @@ def find_file_name_by_inode(inode):
     FIXME! doesn't look in subdirectories.
     """
 
-    print 'Debug, find_file_name_by_inode inode "%s"' % (inode, )
+    print('Debug, find_file_name_by_inode inode "%s"' % (inode, ))
 
     file_wanted = ''
 
@@ -1010,7 +1010,7 @@ def find_file_name_by_inode(inode):
     for file_name in file_list:
         full_file_path = os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_name)
         if inode == os.stat(full_file_path).st_ino:
-            print 'Debug, find_file_name_by_inode found file %s' % (file_name, )
+            print('Debug, find_file_name_by_inode found file %s' % (file_name, ))
             file_wanted = file_name
 
     return file_wanted
@@ -1078,9 +1078,9 @@ def page_development(p_dev):
 
     url_key = 'development'
     try:
-        print '    <table>'
-        print '      <tr>\n        <td colspan="2">Development Page</td>\n      </tr>\n'
-        print '      <tr>\n        <td>Query: <form method="get" action=""><input type="hidden" name="page" value="development"><input type="text" name="dev" value="%s" /><input type="submit" /></form>\n        </td>\n      </tr>\n' % (p_dev, )
+        print('    <table>')
+        print('      <tr>\n        <td colspan="2">Development Page</td>\n      </tr>\n')
+        print('      <tr>\n        <td>Query: <form method="get" action=""><input type="hidden" name="page" value="development"><input type="text" name="dev" value="%s" /><input type="submit" /></form>\n        </td>\n      </tr>\n' % (p_dev, ))
 
         if p_dev:
             beforesubst = URL_LIST[url_key]
@@ -1090,16 +1090,16 @@ def page_development(p_dev):
             opener.addheaders = [('User-agent', USAG)]
             json_data = json.load(opener.open(url_with_query))
 
-            print '      <tr>\n        <td>Result of query<br />\n          %s\n' % (url_with_query, )
-            print '        <pre>'
-            print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '          </pre>'
-            print '        </td>\n      </tr>'
+            print('      <tr>\n        <td>Result of query<br />\n          %s\n' % (url_with_query, ))
+            print('        <pre>')
+            print('%s' % (json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+            print('          </pre>')
+            print('        </td>\n      </tr>')
 
-        print '    </table>'
+        print('    </table>')
 
     except urllib2.HTTPError:
-        print 'page_development: Exception urllib2.HTTPError'
+        print('page_development: Exception urllib2.HTTPError')
 
 
 #####################################################################################################################
@@ -1109,22 +1109,22 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
     if p_pid == '' or p_submit == '':
         # present the chosen pid, or ask for one, and require user to
         # have submitted the request before downloading
-        print '  <form method="get" action="">'
-        print '  <input type="hidden" name="page" value="download" />'
-        print '  <input type="hidden" name="title" value="%s" />' % (p_title, )
-        print '  <input type="hidden" name="subtitle" value="%s" />' % (p_subtitle, )
-        print '  <table>'
-        print '    <tr><td colspan="2">Check details before beginning download</td></tr>\n'
-        print '    <tr><td>Program ID</td><td><input type="text" name="pid" value="%s" /></td></tr>' % (p_pid, )
-        print '    <tr><td>Title</td><td>'
+        print('  <form method="get" action="">')
+        print('  <input type="hidden" name="page" value="download" />')
+        print('  <input type="hidden" name="title" value="%s" />' % (p_title, ))
+        print('  <input type="hidden" name="subtitle" value="%s" />' % (p_subtitle, ))
+        print('  <table>')
+        print('    <tr><td colspan="2">Check details before beginning download</td></tr>\n')
+        print('    <tr><td>Program ID</td><td><input type="text" name="pid" value="%s" /></td></tr>' % (p_pid, ))
+        print('    <tr><td>Title</td><td>')
         if p_title != '':
-            print base64.b64decode(p_title)
-        print '</td></tr>'
-        print '<tr><td>Subtitle</td><td>'
+            print('%' % base64.b64decode(p_title), )
+        print('</td></tr>')
+        print('<tr><td>Subtitle</td><td>')
         if p_subtitle != '':
-            print base64.b64decode(p_subtitle)
-        print '</td></tr>'
-        print '      <tr><td>Force redownload</td><td><input type=\"checkbox\" name=\"force_redownload\" /></td></tr>'
+            print('%s' % (base64.b64decode(p_subtitle), ), )
+        print('</td></tr>')
+        print('      <tr><td>Force redownload</td><td><input type=\"checkbox\" name=\"force_redownload\" /></td></tr>')
 
         tv_checked = ''
         if p_mediatype == 'video':
@@ -1134,23 +1134,23 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
         if p_mediatype == 'audio':
             radio_checked = ' checked'
 
-        print '    <tr><td>Type</td><td>TV:<input type="radio" name="mediatype" value="video" %s/>&nbsp;&nbsp;Radio:<input type="radio" name="mediatype" value="audio" %s/></td></tr>' % (tv_checked, radio_checked, )
-        print '    <tr><td>Transcode ?</td><td><input type="checkbox" name="p_transcode" value="transcode" /></td></tr>\n'
-        print '    <tr><td>Transcode Method</td>\n      <td>',
+        print('    <tr><td>Type</td><td>TV:<input type="radio" name="mediatype" value="video" %s/>&nbsp;&nbsp;Radio:<input type="radio" name="mediatype" value="audio" %s/></td></tr>' % (tv_checked, radio_checked, ))
+        print('    <tr><td>Transcode ?</td><td><input type="checkbox" name="p_transcode" value="transcode" /></td></tr>\n')
+        print('    <tr><td>Transcode Method</td>\n      <td>',)
         print_select_transcode_method(p_mediatype, p_trnscd_cmd_method)
-        print '</td>',
+        print('</td>',)
         if p_mediatype == 'video':
-            print '    <tr><td>Transcode Resolution</td><td>',
+            print('    <tr><td>Transcode Resolution</td><td>',)
             print_select_resolution('')
-            print '      </td>\n    </tr>'
-            print '    <tr>\n      <td>Video Quality</td>\n      <td>%s (change in settings then click back)</td>\n    </tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_video'), )
+            print('      </td>\n    </tr>')
+            print('    <tr>\n      <td>Video Quality</td>\n      <td>%s (change in settings then click back)</td>\n    </tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_video'), ))
         else:
-            print '        <td><input type="hidden" name="trnscd_rez" value="" /></td></tr>\n'
-            print '    <tr><td>Radio Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_audio'), )
+            print('        <td><input type="hidden" name="trnscd_rez" value="" /></td></tr>\n')
+            print('    <tr><td>Radio Quality</td><td>%s (change in settings then click back)</td></tr>' % (my_settings.get(SETTINGS_SECTION, 'quality_audio'), ))
 
-        print '    <tr><td colspan="2"><input type="submit" name="submit" value="enqueue" /></td></tr>'
-        print '  </table>'
-        print '  </form>'
+        print('    <tr><td colspan="2"><input type="submit" name="submit" value="enqueue" /></td></tr>')
+        print('  </table>')
+        print('  </form>')
 
     else:
 
@@ -1187,7 +1187,7 @@ def page_download(p_pid, p_mediatype, p_submit, p_title, p_subtitle, p_force, p_
         read_queue(sub_queue, s_q_f_name)
         sub_queue.append(new_sub_q_item)
         if write_queue(sub_queue, s_q_f_name) != -1:
-            print 'Success, written queue item to %s, go to <a href="?page=queues">queue and logs</a> page.' % (s_q_f_name, )
+            print('Success, written queue item to %s, go to <a href="?page=queues">queue and logs</a> page.' % (s_q_f_name, ))
 
 
 #####################################################################################################################
@@ -1195,102 +1195,102 @@ def page_downloaded(p_dir):
     """this shows a page of media files already downloaded"""
 
 
-    print '  <form method="get" action="" />'
-    print '    <input type="hidden" name="page" value="downloaded" />'
+    print('  <form method="get" action="" />')
+    print('    <input type="hidden" name="page" value="downloaded" />')
 
-    print '    Choose Directory:&nbsp;<select name="dir">\n      <option value="">Top</option>'
+    print('    Choose Directory:&nbsp;<select name="dir">\n      <option value="">Top</option>')
     file_list = os.listdir(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'))
     for file_item in sorted(file_list):
         if os.path.isdir(os.path.join(my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), file_item)):
             file_name, file_ext = os.path.splitext(file_item)
-            print '      <option value="%s"' % (file_name, ),
+            print('      <option value="%s"' % (file_name, ), )
             if file_name == p_dir:
-                print ' selected'
-            print '>%s</option>' % (file_name, )
-    print '    </select>&nbsp;&nbsp;<input type="submit" name="submit" value="GO" />\n</form>\n<br /><br />'
+                print(' selected')
+            print('>%s</option>' % (file_name, ))
+    print('    </select>&nbsp;&nbsp;<input type="submit" name="submit" value="GO" />\n</form>\n<br /><br />')
 
 
     full_dir = '%s/%s' % (my_settings.get(SETTINGS_SECTION, 'iplayer_directory'), p_dir)
     if not os.path.isdir(full_dir):
-        print '<p><b>Error, no such directory "%s"</b></p>' % (p_dir, )
+        print('<p><b>Error, no such directory "%s"</b></p>' % (p_dir, ))
     else:
-        print '<p><b>Analysing directory "%s"</b></p>' % (full_dir, )
-        print '  <form method="get" action="" />'                                   \
+        print('<p><b>Analysing directory "%s"</b></p>' % (full_dir, ))
+        print('  <form method="get" action="" />'                                   \
               '    <input type="hidden" name="page" value="downloaded" />'          \
               '    <input type="hidden" name="dir" value="%s" />'                   \
               '    <input type="checkbox" name="enable_delete" />Enable Delete'     \
               '&nbsp;&nbsp;&nbsp;<input type="checkbox" name="delete_image" />'     \
-              'Delete Associated Image<br /><br />' % (p_dir, )
-        print '    <table>'             \
+              'Delete Associated Image<br /><br />' % (p_dir, ))
+        print('    <table>'             \
               '      <tr>'              \
-              '        <th>&nbsp;</th>'
+              '        <th>&nbsp;</th>')
         if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
-            print '        <th>JWPlayer5</th>'
+            print('        <th>JWPlayer5</th>')
         if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
-            print '        <th>JWPlayer6</th>'
+            print('        <th>JWPlayer6</th>')
         if my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1':
-            print '        <th>JWPlayer7</th>'
+            print('        <th>JWPlayer7</th>')
 
-        print '        <th>Download</th>\n' \
+        print('        <th>Download</th>\n' \
               '        <th>Transcode</th>\n'\
               '        <th>Delete</th>\n'   \
               '        <th>Size KB</th>\n'  \
               '        <th>Date</th>\n'     \
               '        <th>Name</th>\n'     \
-              '      </tr>'
+              '      </tr>')
 
         file_list = os.listdir(full_dir)
         for file_item in sorted(file_list):
             file_prefix, file_ext = os.path.splitext(file_item)
             if file_ext in MEDIA_FILE_SUFFIXES:
                 file_stat = os.stat("%s/%s" % (full_dir, file_item, ))
-                print '    <tr>\n      <td align="center">',
+                print('    <tr>\n      <td align="center">',)
                 file_name_jpg = '%s/%s.jpg' % (full_dir, file_prefix, )
                 if os.path.isfile(file_name_jpg):
-                    print '<img src="%s/%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_prefix, ),
+                    print('<img src="%s/%s/%s.jpg" />' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_prefix, ),)
                 else:
-                    print '&nbsp;',
-                    #print '"%s"', % (file_name_jpg, )
-                print '</td>'
+                    print('&nbsp;',)
+                    #print('"%s"', % (file_name_jpg, ))
+                print('</td>')
                 if my_settings.get(SETTINGS_SECTION, 'Flv5Enable') == '1':
                     if file_ext in JWPLAYABLE_SUFFIXES:
-                        print '      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                        print('      <td align="center"><a href="?page=jwplay5&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, ))
                     else:
-                        print '      <td>&nbsp;</td>'
+                        print('      <td>&nbsp;</td>')
                 if my_settings.get(SETTINGS_SECTION, 'Flv6Enable') == '1':
                     if file_ext in JWPLAYABLE_SUFFIXES:
-                        print '      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                        print('      <td align="center"><a href="?page=jwplay6&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, ))
                     else:
-                        print '      <td>&nbsp;</td>'
+                        print('      <td>&nbsp;</td>')
                 if my_settings.get(SETTINGS_SECTION, 'Flv7Enable') == '1':
                     if file_ext in JWPLAYABLE_SUFFIXES:
-                        print '      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, )
+                        print('      <td align="center"><a href="?page=jwplay7&file=%s&dir=%s"><img src="/icons/movie.png" /></a></td>' % (file_item, p_dir, ))
                     else:
-                        print '      <td>&nbsp;</td>'
+                        print('      <td>&nbsp;</td>')
 
-                print '      <td align="center"><a href="%s/%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_item, )
-                #print '      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
-                print '      <td><a href="?page=transcode_inode&inode=%d"><img src="/icons/transfer.png" /></td>' % (file_stat[stat.ST_INO], )
-                print '      <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], )
-                print '      <td>%d</td>' % (file_stat.st_size / 1024, )
-                print '      <td>%s</td>' % time.ctime(file_stat.st_mtime, )
-                print '      <td>%s</td>' % (file_item, )
-                print '    </tr>'
+                print('      <td align="center"><a href="%s/%s/%s" target="_new"><img src="/icons/diskimg.png" /></a></td>' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, file_item, ))
+                #print('      <td align="center" style="background-image:url(/icons/transfer.png);background-repeat:no-repeat;background-position:center" /><input type="checkbox" name="transcode_inodes" value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], ))
+                print('      <td><a href="?page=transcode_inode&inode=%d"><img src="/icons/transfer.png" /></td>' % (file_stat[stat.ST_INO], ))
+                print('      <td align="center" style="background-image:url(/icons/burst.png);background-repeat:no-repeat;background-position:center"    /><input type="checkbox" name="delete_inode"    value="%d" />&nbsp;&nbsp;&nbsp;</td>' % (file_stat[stat.ST_INO], ))
+                print('      <td>%d</td>' % (file_stat.st_size / 1024, ))
+                print('      <td>%s</td>' % time.ctime(file_stat.st_mtime, ))
+                print('      <td>%s</td>' % (file_item, ))
+                print('    </tr>')
 
-        print '    </table>'
-        print '  <input type="submit" name="submit" value="GO" />\n</form>\n'
+        print('    </table>')
+        print('  <input type="submit" name="submit" value="GO" />\n</form>\n')
 
 #####################################################################################################################
 def page_favourites_add(p_pid, p_pid_type, p_mediatype, p_title, p_subtitle):
     """add a favourite; p_pid is brand ID or series ID according to p_pid_type"""
 
-    print '<h3>work in progress</h3>'
+    print('<h3>work in progress</h3>')
 
     # read favourites
     faves = {}
     fave_file = os.path.join(CONTROL_DIR, FAVOURITES_FILE)
     if not os.path.isfile(fave_file):
-        print '<p>Creating your favourite file</p>'
+        print('<p>Creating your favourite file</p>')
     else:
         try:
             with open(fave_file) as infile:
@@ -1298,11 +1298,11 @@ def page_favourites_add(p_pid, p_pid_type, p_mediatype, p_title, p_subtitle):
 
         except OSError:
             # ignore when file can't be opened
-            print 'Error, page_favourites_add couldn\t open file %s for reading' % (fave_file, )
+            print('Error, page_favourites_add couldn\t open file %s for reading' % (fave_file, ))
             return
 
     if p_pid in faves:
-        print '<p><b>Warning</b>, a favourite with that PID already exists, it is being overwritten</p>'
+        print('<p><b>Warning</b>, a favourite with that PID already exists, it is being overwritten</p>')
 
     faves[p_pid] = { 'pid': p_pid,
                      'pid_type': p_pid_type,
@@ -1314,11 +1314,11 @@ def page_favourites_add(p_pid, p_pid_type, p_mediatype, p_title, p_subtitle):
                    }
 
     if write_queue(faves, fave_file) == -1:
-        print '<p><b>Error</b>, failed to write favourites file</p>'
+        print('<p><b>Error</b>, failed to write favourites file</p>')
     else:
-        print '<p><b>Success</b>, written favourites file</p>'
+        print('<p><b>Success</b>, written favourites file</p>')
 
-    print '<p>Go to <a href="?page=favourites_list">favourites</a> to review your current selection</p>'
+    print('<p>Go to <a href="?page=favourites_list">favourites</a> to review your current selection</p>')
 
 #####################################################################################################################
 def page_favourites_list(p_delete_pid):
@@ -1328,7 +1328,7 @@ def page_favourites_list(p_delete_pid):
     faves = {}
     fave_file = os.path.join(CONTROL_DIR, FAVOURITES_FILE)
     if not os.path.isfile(fave_file):
-        print '<p>Favourites file not found</p>'
+        print('<p>Favourites file not found</p>')
         return
     else:
         try:
@@ -1337,58 +1337,58 @@ def page_favourites_list(p_delete_pid):
 
         except OSError:
             # ignore when file can't be opened
-            print 'Error, page_favourites_add couldn\t open file %s for reading' % (fave_file, )
+            print('Error, page_favourites_add couldn\t open file %s for reading' % (fave_file, ))
             return
 
     if p_delete_pid and p_delete_pid != '':
         del faves[p_delete_pid]
         if write_queue(faves, fave_file) == -1:
-            print '<p><b>Error</b>, failed to write favourites file after deleting item</p>'
+            print('<p><b>Error</b>, failed to write favourites file after deleting item</p>')
 
     # print favourite brands
     for pid_type in [ 'brand', 'series' ]:
         fave_type_found = False
         for p_pid,fave in faves.iteritems():
-            #print 'favourite pid is %s fave is %s' % (p_pid, str(fave), )
+            #print('favourite pid is %s fave is %s' % (p_pid, str(fave), ))
             if fave['pid_type'] == pid_type:
-                # print the table heading the first time we see this type of entry
+                # print the table heading the first time we see this type of entry)
                 if not fave_type_found:
                     fave_type_found = True
-                    print '<table>\n  <tr><th colspan="4">Favourite %s</th></tr>\n  <tr>' % (pid_type, )
+                    print('<table>\n  <tr><th colspan="4">Favourite %s</th></tr>\n  <tr>' % (pid_type, ))
                     for fieldname in FAVOURITES_FIELDS:
-                        print '    <th>%s</th>' % (fieldname, )
-                    print '  </tr>'
+                        print('    <th>%s</th>' % (fieldname, ))
+                    print('  </tr>')
 
-                print '  <tr>'
+                print('  <tr>')
                 for fieldname in FAVOURITES_FIELDS:
                     if fieldname not in fave or fave[fieldname] == '':
-                        print '    <td>&nbsp;</td>'
+                        print('    <td>&nbsp;</td>')
                     elif 'title' in fieldname:
-                        print '    <td>%s<br />\n<a href="?page=search&mediatype=%s&submit=search&sought=%s">search this title</a></td>' % (base64.b64decode(fave[fieldname]), fave['mediatype'], html_escape(base64.b64decode(fave['title'])), ),
+                        print('    <td>%s<br />\n<a href="?page=search&mediatype=%s&submit=search&sought=%s">search this title</a></td>' % (base64.b64decode(fave[fieldname]), fave['mediatype'], html_escape(base64.b64decode(fave['title'])), ),)
                     elif 'TT_' in fieldname:
-                        print '    <td>%s</td>' % (time.asctime(time.localtime(fave[fieldname])), )
+                        print('    <td>%s</td>' % (time.asctime(time.localtime(fave[fieldname])), ))
                     elif fieldname == 'pid':
-                        print '    <td><a href="?page=search_related&pid=%s&pid_type=%s&mediatype=%s&title=%s">search' % (
+                        print('    <td><a href="?page=search_related&pid=%s&pid_type=%s&mediatype=%s&title=%s">search' % (
                             fave['pid'],
                             fave['pid_type'],
                             fave['mediatype'],
-                            fave['title'], ),
-                        print '<br /><a href="?page=favourites_list&delete_pid=%s">delete favourite</a></td>' % (p_pid, )
+                            fave['title'], ),)
+                        print('<br /><a href="?page=favourites_list&delete_pid=%s">delete favourite</a></td>' % (p_pid, ))
                     else:
-                        print '    <td>%s</td>' % (fave[fieldname], )
-                print '  </tr>'
+                        print('    <td>%s</td>' % (fave[fieldname], ))
+                print('  </tr>')
 
                 # print the close table heading the first time we see this type of entry
         if fave_type_found:
-            print '</table><br /><br />'
+            print('</table><br /><br />')
 
         fave_type_found = False
 
 
     # print favourite searches
-    print '</pre>'
+    print('</pre>')
 
-    print '<h3>work in progress</h3>'
+    print('<h3>work in progress</h3>')
 
 
 #####################################################################################################################
@@ -1405,23 +1405,23 @@ def page_highlights_video():
         json_data = json.load(opener.open(URL_LIST[url_key]))
 
         if dbg_level > 1:
-            print '<pre>FULL DUMP OF HIGHLIGHTS RESPONSE'
-            print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '</pre>'
+            print('<pre>FULL DUMP OF HIGHLIGHTS RESPONSE')
+            print('%' % (json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+            print('</pre>')
 
-        print '  <table>' \
+        print('  <table>' \
               '    <tr>' \
               '      <th colspan="7">HIGHLIGHTS on TV</th>' \
               '    </tr>' \
-              '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
+              '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>')
 
         print_video_listing_rows(json_data['home_highlights']['elements'])
 
-        print '  </table>' \
-              '  </form>'
+        print('  </table>' \
+              '  </form>')
 
     except urllib2.HTTPError:
-        print 'page_highlights_video: Exception urllib2.HTTPError'
+        print('page_highlights_video: Exception urllib2.HTTPError')
 
 
 #####################################################################################################################
@@ -1429,15 +1429,15 @@ def page_illegal_param(illegal_param_count):
     """parameter being passed has invalid format, possibly indicating hack
     attack"""
 
-    print '''<h1>Illegal Parameter</h1>
-%d illegal parameters found''' % (illegal_param_count, )
+    print('''<h1>Illegal Parameter</h1>
+%d illegal parameters found''' % (illegal_param_count, ))
 
 
 #####################################################################################################################
 def page_jwplay5(p_dir, p_file):
     """this is the longtail/jwplayer version 5 movie player"""
 
-    print '''
+    print('''
         <script type="text/javascript" src="/jwmediaplayer-5.8/swfobject.js"></script>
         <embed flashvars="file=%s/%s/%s&autostart=true"
                 autostart="false"
@@ -1456,50 +1456,50 @@ def page_jwplay5(p_dir, p_file):
         my_settings.get(SETTINGS_SECTION, 'Flv5Uri'),
         my_settings.get(SETTINGS_SECTION, 'Flv5UriSWF'),
         my_settings.get(SETTINGS_SECTION, 'flash_width'),
-        my_settings.get(SETTINGS_SECTION, 'flash_height'), )
+        my_settings.get(SETTINGS_SECTION, 'flash_height'), ))
 
 
 #####################################################################################################################
 def page_jwplay6(p_dir, p_file):
     """this is the longtail/jwplayer version 6 movie player"""
 
-    print '    <script type="text/javascript" src="%s%s"></script>' % (my_settings.get(SETTINGS_SECTION, 'Flv6Uri'), my_settings.get(SETTINGS_SECTION, 'Flv6UriJS'), )
+    print('    <script type="text/javascript" src="%s%s"></script>' % (my_settings.get(SETTINGS_SECTION, 'Flv6Uri'), my_settings.get(SETTINGS_SECTION, 'Flv6UriJS'), ))
 
     if my_settings.get(SETTINGS_SECTION, 'Flv6Key') != '':
-        print '    <script type="text/javascript">jwplayer.key="%s";</script>' % (my_settings.get(SETTINGS_SECTION, 'Flv6Key'), )
+        print('    <script type="text/javascript">jwplayer.key="%s";</script>' % (my_settings.get(SETTINGS_SECTION, 'Flv6Key'), ))
 
-    print '''    <div id="myElement">Loading the player...</div>
+    print('''    <div id="myElement">Loading the player...</div>
     <script type="text/javascript">
         jwplayer("myElement").setup({
             file: "%s/%s/%s",
             fallback: true
         });
     </script>
-''' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file, )
+''' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file, ))
 
 
 #####################################################################################################################
 def page_jwplay7(p_dir, p_file):
     """this is the longtail/jwplayer version 7 movie player"""
 
-    print '    <script type="text/javascript" src="%s%s"></script>' % (my_settings.get(SETTINGS_SECTION, 'Flv7Uri'), my_settings.get(SETTINGS_SECTION, 'Flv7UriJS'), )
+    print('    <script type="text/javascript" src="%s%s"></script>' % (my_settings.get(SETTINGS_SECTION, 'Flv7Uri'), my_settings.get(SETTINGS_SECTION, 'Flv7UriJS'), ))
 
     if my_settings.get(SETTINGS_SECTION, 'Flv7Key') != '':
-        print '    <script type="text/javascript">jwplayer.key="%s";</script>' % (my_settings.get(SETTINGS_SECTION, 'Flv7Key'), )
+        print('    <script type="text/javascript">jwplayer.key="%s";</script>' % (my_settings.get(SETTINGS_SECTION, 'Flv7Key'), ))
 
     if p_dir == '':
         full_path = '%s/%s' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_file, )
     else:
         full_path = '%s/%s/%s' % (my_settings.get(SETTINGS_SECTION, 'base_url'), p_dir, p_file, )
 
-    print '''    <div id="myelement">loading the player...</div>
+    print('''    <div id="myelement">loading the player...</div>
     <script type="text/javascript">
         jwplayer("myelement").setup({
             file: "%s",
             fallback: true
         });
     </script>
-''' % ( full_path, )
+''' % ( full_path, ))
 
 
 #####################################################################################################################
@@ -1517,234 +1517,234 @@ def page_popular():
         json_data = json.load(opener.open(URL_LIST[url_key]))
 
         if dbg_level > 1:
-            print '<pre>'
-            print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '</pre>'
+            print('<pre>')
+            print('%' % (json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+            print('</pre>')
 
-        print '  <table>'
-        print '    <tr>'
-        print '      <th colspan="7"><font size=+2>Popular On TV</font></th>'
-        print '    </tr>'
-        print '      <th>action</th><th>pid</th><th>type</th><th>title</th><th>subtitle</th><th>synopsis</th><th>duration</th>'
+        print('  <table>')
+        print('    <tr>')
+        print('      <th colspan="7"><font size=+2>Popular On TV</font></th>')
+        print('    </tr>')
+        print('      <th>action</th><th>pid</th><th>type</th><th>title</th><th>subtitle</th><th>synopsis</th><th>duration</th>')
         print_video_listing_rows(json_data['group_episodes']['elements'])
-        print '  </table>'
+        print('  </table>')
 
     except urllib2.HTTPError:
-        print 'page_popular: exception urllib2.httperror'
+        print('page_popular: exception urllib2.httperror')
 
 
 #####################################################################################################################
 def page_queues(p_pid, p_delete_pid, p_delete_queue):
     """this shows the current state of queues, and prints a log file that matches the p_pid"""
 
-    print '<h3>Processes Running</h3>'
-    print '<ul>'
+    print('<h3>Processes Running</h3>')
+    print('<ul>')
     my_username = pwd.getpwuid(os.getuid())[0]
     for p in psutil.process_iter(attrs=['name', 'username', 'cmdline', ]):
         if p.info['name'] != 'httpd-prefork' and p.info['username'] == my_username:
-            print '<li>' + ' '.join(p.info['cmdline']) + '</li>'
-    print '</ul>'
+            print('<li>' + ' '.join(p.info['cmdline']) + '</li>')
+    print('</ul>')
 
     ####
 
     if p_delete_pid != '' and p_delete_queue != '':
-        print '<h3>Attempting to remove pid %s from queue %s</h3>\n<p>' % (p_delete_pid, p_delete_queue)
+        print('<h3>Attempting to remove pid %s from queue %s</h3>\n<p>' % (p_delete_pid, p_delete_queue))
         if p_delete_queue == SUBMIT_QUEUE or p_delete_queue == PENDING_QUEUE or p_delete_queue == TRNSCDE_SUB_QUEUE:
             quefile = os.path.join(CONTROL_DIR, p_delete_queue)
             queue = []
             if os.path.isfile(quefile):
                 queue_count = read_queue(queue, quefile)    # count queue entries, -1 if queue couldn't be read
                 if queue_count == -1:
-                    print '<b>Error</b>, failed reading file'
+                    print('<b>Error</b>, failed reading file')
                 elif len(queue) == 0:
-                    print '<b>Error</b>, queue is empty'
+                    print('<b>Error</b>, queue is empty')
                 else:
                     for idx in range(0, len(queue)):
                         if queue[idx]['pid'] == p_delete_pid:
                             del queue[idx]
                             if write_queue(queue, quefile) == -1:
-                                print '<p><b>Error</b>, failed to write queue file</p>'
+                                print('<p><b>Error</b>, failed to write queue file</p>')
                             else:
-                                print '<p><b>Success</b>, written queue file</p>'
+                                print('<p><b>Success</b>, written queue file</p>')
 
                         else:
-                            print 'item at position %d doesn\'t have matching pid %s<br />' % (idx, queue[idx]['pid'], )
+                            print('item at position %d doesn\'t have matching pid %s<br />' % (idx, queue[idx]['pid'], ))
             else:
-                print '<b>Error</b>, queue file hasn\'t been created'
+                print('<b>Error</b>, queue file hasn\'t been created')
 
             # delete entry where pid is blah
             # save queue file
-        print '</p><hr width="50%" />'
+        print('</p><hr width="50%" />')
 
 
-    print '<h3>Current State of Queues And Logs</h3>'
+    print('<h3>Current State of Queues And Logs</h3>')
 
     ## active queue ##
-    print 'active queue:<ol>'
+    print('active queue:<ol>')
     quefile = os.path.join(CONTROL_DIR, ACTIVE_QUEUE)
     queue = []
     if os.path.isfile(quefile):
         queue_count = read_queue(queue, quefile)    # count queue entries, -1 if queue couldn't be read
         if queue_count == -1:
-            print '<b>error</b>, failed reading file'
+            print('<b>error</b>, failed reading file')
         elif len(queue) == 0:
         #elif queue:
-            print 'empty'
+            print('empty')
         else:
             print_queue_as_html_table(queue, QUEUE_FIELDS, False, ACTIVE_QUEUE)
     else:
-        print 'hasn\'t been created'
-    print '</ol><br />'
+        print('hasn\'t been created')
+    print('</ol><br />')
 
 
     ## submission queue ##
-    print 'submission queue:<ol>'
+    print('submission queue:<ol>')
     quefile = os.path.join(CONTROL_DIR, SUBMIT_QUEUE)
     queue = []
     if os.path.isfile(quefile):
         queue_count = read_queue(queue, quefile)
         if queue_count == -1:
-            print '<b>error</b>, failed reading file %s' % (quefile, )
+            print('<b>error</b>, failed reading file %s' % (quefile, ))
         elif len(queue) == 0:
         #elif queue:
-            print 'empty'
+            print('empty')
         else:
             print_queue_as_html_table(queue, QUEUE_FIELDS, True, SUBMIT_QUEUE)
     else:
-        print 'hasn\'t been created'
-    print '</ol>\n<br />'
+        print('hasn\'t been created')
+    print('</ol>\n<br />')
 
 
     ## pending queue ##
-    print 'pending queue:<ol>'
+    print('pending queue:<ol>')
     quefile = os.path.join(CONTROL_DIR, PENDING_QUEUE)
     queue = []
     if os.path.isfile(quefile):
         queue_count = read_queue(queue, quefile)
         if queue_count == -1:
-            print '<b>error</b>, failed reading file'
+            print('<b>error</b>, failed reading file')
         elif len(queue) == 0:
         #elif queue:
-            print 'empty'
+            print('empty')
         else:
             print_queue_as_html_table(queue, QUEUE_FIELDS, True, PENDING_QUEUE)
     else:
-        print 'hasn\'t been created'
-    print '</ol><br />'
+        print('hasn\'t been created')
+    print('</ol><br />')
 
     ## recently completed ##
-    print 'recent items:<ol>'
+    print('recent items:<ol>')
     quefile = os.path.join(CONTROL_DIR, RECENT_ITEMS)
     queue = []
     if os.path.isfile(quefile):
         queue_count = read_queue(queue, quefile)
         if queue_count == -1:
-            print '<b>error</b>, failed reading file'
+            print('<b>error</b>, failed reading file')
         elif len(queue) == 0:
         #elif queue:
-            print 'empty'
+            print('empty')
         else:
             print_queue_as_html_table(queue, QUEUE_FIELDS, False, RECENT_ITEMS)
     else:
-        print 'hasn\'t been created'
-    print '</ol><br />'
+        print('hasn\'t been created')
+    print('</ol><br />')
 
 
     ## transcode queues ##
-    print 'transcode queue active:<ol>'
+    print('transcode queue active:<ol>')
     quefile = os.path.join(CONTROL_DIR, TRNSCDE_ACT_QUEUE)
     queue = []
     if os.path.isfile(quefile):
         queue_count = read_queue(queue, quefile)
         if queue_count == -1:
-            print '<b>error</b>, failed reading file'
+            print('<b>error</b>, failed reading file')
         elif len(queue) == 0:
         #elif queue:
-            print 'empty'
+            print('empty')
         else:
             print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS, False, TRNSCDE_ACT_QUEUE)
     else:
-        print 'hasn\'t been created'
-    print '</ol><br />'
+        print('hasn\'t been created')
+    print('</ol><br />')
 
-    print 'transcode queue submitted:<ol>'
+    print('transcode queue submitted:<ol>')
     quefile = os.path.join(CONTROL_DIR, TRNSCDE_SUB_QUEUE)
     queue = []
     if os.path.isfile(quefile):
         queue_count = read_queue(queue, quefile)
         if queue_count == -1:
-            print '<b>error</b>, failed reading file'
+            print('<b>error</b>, failed reading file')
         elif len(queue) == 0:
         #elif queue:
-            print 'empty'
+            print('empty')
         else:
             print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS, True, TRNSCDE_SUB_QUEUE)
     else:
-        print 'hasn\'t been created'
-    print '</ol><br />'
+        print('hasn\'t been created')
+    print('</ol><br />')
 
 
-    print 'transcode recent:<ol>'
+    print('transcode recent:<ol>')
     quefile = os.path.join(CONTROL_DIR, TRNSCDE_REC_QUEUE)
     queue = []
     if os.path.isfile(quefile):
         queue_count = read_queue(queue, quefile)
         if queue_count == -1:
-            print '<b>error</b>, failed reading file'
+            print('<b>error</b>, failed reading file')
         elif len(queue) == 0:
         #elif queue:
-            print 'empty'
+            print('empty')
         else:
             print_queue_as_html_table(queue, TRNSCD_QUE_FIELDS, False, TRNSCDE_REC_QUEUE)
     else:
-        print 'hasn\'t been created'
-    print '</ol><br />'
+        print('hasn\'t been created')
+    print('</ol><br />')
 
 
     #### logging information
     # basic information
     #file_list = os.listdir(CONTROL_DIR)
-    #print '<pre>files in %s are:\n\t%s</pre>\n<br />\n<br />' % (CONTROL_DIR, str(file_list), )
+    #print('<pre>files in %s are:\n\t%s</pre>\n<br />\n<br />' % (CONTROL_DIR, str(file_list), ))
 
     log_dir = os.path.join(CONTROL_DIR, 'logs')
     if os.path.isdir(log_dir):
         file_list = os.listdir(log_dir)
-        print 'Log files in %s:\n<br />\n<ul>' % (log_dir, )
+        print('Log files in %s:\n<br />\n<ul>' % (log_dir, ))
         for log_file_name in sorted(file_list):
-            print '<a href="?page=queues&pid=%s">%s</a>&nbsp;' % (log_file_name, log_file_name, )
-        print '</ul><br />\n<br />'
+            print('<a href="?page=queues&pid=%s">%s</a>&nbsp;' % (log_file_name, log_file_name, ))
+        print('</ul><br />\n<br />')
     else:
-        print 'cron job hasn\'t run and made %s yet</pre>\n<br />\n<br />' % log_dir
+        print('cron job hasn\'t run and made %s yet</pre>\n<br />\n<br />' % log_dir)
 
 
-    print '<a name="loglisting">'
+    print('<a name="loglisting">')
     if p_pid != '':
         log_file_name = os.path.join(CONTROL_DIR, "logs", p_pid)
         if os.path.isfile(log_file_name):
             with open(log_file_name, 'r') as log_file_handle:
                 log_file_contents = log_file_handle.read()
-            print 'Log for pid: %s\n<br /><ul><pre>%s</pre></ul>' % (p_pid, log_file_contents, )
+            print('Log for pid: %s\n<br /><ul><pre>%s</pre></ul>' % (p_pid, log_file_contents, ))
 
 
 #####################################################################################################################
 def page_search(p_mediatype, p_sought):
     """page which uses the BBC iplayer API to search for programs which does free-text search"""
 
-    print '<form method="get" action="">'                           \
+    print('<form method="get" action="">'                           \
           '<input type="hidden" name="page" value="search" />'      \
-          'Search term: <input type="text" name="sought" value="%s" />' % (html_unescape(p_sought), )
+          'Search term: <input type="text" name="sought" value="%s" />' % (html_unescape(p_sought), ))
 
     print_select_mediatype(p_mediatype)
 
-    print '<input type="submit" name="submit" value="search" />'    \
-          '</form>'
+    print('<input type="submit" name="submit" value="search" />'    \
+          '</form>')
 
 
     if p_sought != '':
         if p_mediatype == 'video':
             page_search_video(p_sought)
         elif p_mediatype == 'audio':
-            print '<b>Work in progress</b><br />'
+            print('<b>Work in progress</b><br />')
             page_search_audio(p_sought)
 
 
@@ -1757,33 +1757,33 @@ def page_search_audio(p_sought):
 
     # present data returned by a audio search
     p_mediatype = 'audio'
-    print '  <table width="100%" >\n'
+    print('  <table width="100%" >\n')
     try:
-        print '    <tr>\n      <th colspan="6">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), )
-        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Synopsis</th>\n    </tr>'
+        print('    <tr>\n      <th colspan="6">%s search results for <i>%s</i></th>\n    </tr>''' % (p_mediatype, html_unescape(p_sought), ))
+        print('    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Synopsis</th>\n    </tr>')
         beforesubst = URL_LIST['search_audio']
         url_with_query = beforesubst.format(html_escape(p_sought))
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
-        #print '<!-- audio search url %s -->' % (url_with_query, )
+        #print('<!-- audio search url %s -->' % (url_with_query, ))
 
         json_data = json.load(opener.open(url_with_query))
         program_data = json_data['results']
 
         if dbg_level > 1:
-            print '    <tr bgcolor="#ddd">\n      <td colspan="6">doing audio search with URL %s' % (url_with_query, )
-            print '<pre>=== full json dump of search result ==='
-            #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '</pre><br />'
-            print '      </td>\n    </tr>'
+            print('    <tr bgcolor="#ddd">\n      <td colspan="6">doing audio search with URL %s' % (url_with_query, ))
+            print('<pre>=== full json dump of search result ===')
+            #print('%s' % (json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+            print('%s' % (json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+            print('</pre><br />')
+            print('      </td>\n    </tr>')
 
         if len(program_data):
         #if program_data:
             # show all the episodes first
             for j_row in program_data:
-                #print 'type %s' % (j_row['type'],)
+                #print('type %s' % (j_row['type'],))
                 j_pid = j_row['uri'].split(':')[3]
                 j_type = j_row['type']
                 j_synopsis = ''
@@ -1792,27 +1792,27 @@ def page_search_audio(p_sought):
                 j_title = ''
                 if 'title' in j_row:
                     j_title = j_row['title']
-                #print '    <tr><td colspan="7">%s</td></tr>' % (j_row, )
-                print '    <tr>\n'
+                #print('    <tr><td colspan="7">%s</td></tr>' % (j_row, ))
+                print('    <tr>\n')
                 b64_title = ''
                 if j_title != '':
                     b64_title = base64.b64encode(j_title.encode('utf-8'))
                 if j_type == 'episode':
-                    print '      <td>%s</td>\n' % (pid_to_download_link(j_pid, p_mediatype, b64_title, ''), )
+                    print('      <td>%s</td>\n' % (pid_to_download_link(j_pid, p_mediatype, b64_title, ''), ))
                 elif j_type == 'brand':
-                    print '      <td><a href="?page=search">search brand<a></td>\n'
+                    print('      <td><a href="?page=search">search brand<a></td>\n')
                 elif j_type == 'series':
-                    print '      <td><a href="?page=search">search series</a></td>\n'
-                print '      <td>%s</td>\n' \
+                    print('      <td><a href="?page=search">search series</a></td>\n')
+                print('      <td>%s</td>\n' \
                       '      <td>%s</td>\n' \
                       '      <td>%s</td>\n' \
                       '      <td>%s</td>\n' \
-                      '    </tr>' % (j_pid, j_type, j_title, j_synopsis, )
+                      '    </tr>' % (j_pid, j_type, j_title, j_synopsis, ))
                 if j_type != 'episode':
-                    print '<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s</a> to favourites (%s pid %s)</td></tr>' % (j_pid, j_type, p_mediatype, b64_title, j_title, j_type, j_pid, )
+                    print('<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s</a> to favourites (%s pid %s)</td></tr>' % (j_pid, j_type, p_mediatype, b64_title, j_title, j_type, j_pid, ))
 
     except urllib2.HTTPError as uhe:
-        print 'page_search: Audio Search - Exception urllib2.HTTPError %s' % uhe
+        print('page_search: Audio Search - Exception urllib2.HTTPError %s' % uhe)
 
 
 #####################################################################################################################
@@ -1823,26 +1823,26 @@ def page_search_video(p_sought):
 
     # present data returned by a video search
     p_mediatype = 'video'
-    print '  <table width="100%" >\n'
+    print('  <table width="100%" >\n')
     try:
         beforesubst = URL_LIST['search_video']
         url_with_query = beforesubst.format(html_escape(p_sought))
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
-        #print '<!-- video search url %s -->' % (url_with_query, )
+        #print('<!-- video search url %s -->' % (url_with_query, ))
 
         json_data = json.load(opener.open(url_with_query))
         program_data = json_data[1]
 
         if dbg_level > 0:
-            print '    <tr bgcolor="#ddd">\n      <td colspan="7">doing %s search with URL %s' % (p_mediatype, url_with_query, )
+            print('    <tr bgcolor="#ddd">\n      <td colspan="7">doing %s search with URL %s' % (p_mediatype, url_with_query, ))
             if dbg_level > 1:
-                print '<pre>=== full json dump of search result ==='
-                #print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-                print json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )
-                print '</pre><br />'
-            print '      </td>\n    </tr>'
+                print('<pre>=== full json dump of search result ===')
+                #print('%s' % (json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+                print('%s' % (json.dumps( program_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+                print('</pre><br />')
+            print('      </td>\n    </tr>')
 
         if len(program_data):
             # show all the episodes first
@@ -1850,13 +1850,13 @@ def page_search_video(p_sought):
             for j_row in program_data:
                 if j_row['tleo'][0]['type'] == 'episode':
                     if episode_heading_shown == 0:
-                        print '    <tr>\n      <th colspan="7">Video search results for <i>%s</i></th>\n    </tr>''' % (html_unescape(p_sought), )
-                        print '    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synopsis</th><th>Duration</th>\n    </tr>'
+                        print('    <tr>\n      <th colspan="7">Video search results for <i>%s</i></th>\n    </tr>''' % (html_unescape(p_sought), ))
+                        print('    <tr>\n      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Secondary Title</th><th>Synopsis</th><th>Duration</th>\n    </tr>')
                         episode_heading_shown = 1
                     print_video_listing_rows(j_row['tleo'])
 
             # search for items which are brands or series
-            #print '<tr><td colspan="7">&nbsp;</td></tr>'
+            #print('<tr><td colspan="7">&nbsp;</td></tr>')
             for j_row in program_data:
                 tleo_pid = j_row['tleo'][0]['pid']
                 tleo_type = j_row['tleo'][0]['type']
@@ -1864,25 +1864,25 @@ def page_search_video(p_sought):
                 b64_tleo_title = base64.b64encode(tleo_title)
 
                 if tleo_type != 'episode':
-                    print '<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s (%s pid %s) to favourites</a></td></tr>' % (tleo_pid, tleo_type, p_mediatype, b64_tleo_title, tleo_title, tleo_type, tleo_pid, )
+                    print('<tr><td><a href="?page=favourites_add&pid=%s&type=%s&mediatype=%s&title=%s">Add %s (%s pid %s) to favourites</a></td></tr>' % (tleo_pid, tleo_type, p_mediatype, b64_tleo_title, tleo_title, tleo_type, tleo_pid, ))
                     search_show_episodes_video(tleo_pid, tleo_type, base64.b64encode(j_row['tleo'][0]['title']))
 
     except urllib2.HTTPError as uhe:
-        print 'page_search: Video Search - Exception urllib2.HTTPError %s' % uhe
-    print '  </table>\n<br />\n<br />'
+        print('page_search: Video Search - Exception urllib2.HTTPError %s' % uhe)
+    print('  </table>\n<br />\n<br />')
 
 #####################################################################################################################
 def page_search_related(p_pid, p_pid_type, p_mediatype, p_title):
     """find items related to the pid, which is typically a brand or series"""
 
     # present data returned by a video search
-    print '  <table width="100%" >\n'
+    print('  <table width="100%" >\n')
     if p_mediatype == 'video':
         search_show_episodes_video(p_pid, p_pid_type, p_title)
     else:
         #search_show_episodes_audio(p_pid, p_pid_type, p_title)
-        print '<tr><th>Sorry, can\'t search for related programs of type "%s" yet</th></tr>' % (p_mediatype, )
-    print '  </table>\n<br />\n<br />'
+        print('<tr><th>Sorry, can\'t search for related programs of type "%s" yet</th></tr>' % (p_mediatype, ))
+    print('  </table>\n<br />\n<br />')
 
 
 #####################################################################################################################
@@ -1896,25 +1896,25 @@ def page_settings():
             my_settings.read(config_file_name)
 
         except ConfigParser.NoSectionError:
-            print 'Fatal Error, can\'t open %s for reading <br />' % config_file_name
+            print('Fatal Error, can\'t open %s for reading <br />' % config_file_name)
             return -1
     else:
-        print 'Fatal Error, can\'t open settings file %s for reading.<br />' % config_file_name
+        print('Fatal Error, can\'t open settings file %s for reading.<br />' % config_file_name)
         return -1
 
 
     if SETTINGS_SECTION not in my_settings.sections():
-        print 'section %s doesn\'t exit' % SETTINGS_SECTION
+        print('section %s doesn\'t exit' % SETTINGS_SECTION)
         my_settings.add_section(SETTINGS_SECTION)
 
-    print '<form method="get" action="">'                           \
+    print('<form method="get" action="">'                           \
           '<input type="hidden" name="page" value="settings" />'    \
           '<table>'                                                 \
           '  <tr>'                                                  \
           '    <th align="right">Setting</th>'                      \
           '    <th>Value</th>'                                      \
           '    <th>Default</th>\n'                                  \
-          '  </tr>'
+          '  </tr>')
 
 
     for setting in sorted(SETTINGS_DEFAULTS):
@@ -1931,7 +1931,7 @@ def page_settings():
             #except AttributeError:
             #except NameError:
             except ConfigParser.NoOptionError:
-                print 'failed getting setting %s from config, setting to default' % setting
+                print('failed getting setting %s from config, setting to default' % setting)
                 # otherwise set it to a default value
                 try:
                     setting_value = SETTINGS_DEFAULTS[setting]
@@ -1943,14 +1943,14 @@ def page_settings():
         my_settings.set(SETTINGS_SECTION, setting, setting_value)
 
 
-        print '    <tr>\n      <td align="right">%s&nbsp;&nbsp;</td>' % (setting, )
-        print '      <td width="50%%"><input type="text" name="c_%s" value="%s" style="display:table-cell; width:100%%" /></td>' % (setting, input_form_escape(setting_value), )
-        print '      <td>&nbsp;%s</td>' % (SETTINGS_DEFAULTS[setting], )
-        print '    </tr>'
+        print('    <tr>\n      <td align="right">%s&nbsp;&nbsp;</td>' % (setting, ))
+        print('      <td width="50%%"><input type="text" name="c_%s" value="%s" style="display:table-cell; width:100%%" /></td>' % (setting, input_form_escape(setting_value), ))
+        print('      <td>&nbsp;%s</td>' % (SETTINGS_DEFAULTS[setting], ))
+        print('    </tr>')
 
-    print '    <tr>\n     <td align="center"><input type="reset" value="revert"></td><td align="center"><input type="submit" name="submit" value="submit" /></td><td></td>\n    </tr>'
-    print '  </table>'
-    print '  </form>'
+    print('    <tr>\n     <td align="center"><input type="reset" value="revert"></td><td align="center"><input type="submit" name="submit" value="submit" /></td><td></td>\n    </tr>')
+    print('  </table>')
+    print('  </form>')
 
     with open(config_file_name, 'wb') as configfile:
         my_settings.write(configfile)
@@ -1968,29 +1968,29 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_subti
     if p_subtitle != '':
         decoded_subtitle = base64.b64decode(p_subtitle)
 
-    print '''<table><td>PID</td><td>%s</td></tr>
+    print('''<table><td>PID</td><td>%s</td></tr>
 <tr><td>Title</td><td>%s</td></tr>
 <tr><td>Subtitle</td><td>%s</td></tr>
-''' % (p_pid, decoded_title, decoded_subtitle, )
+''' % (p_pid, decoded_title, decoded_subtitle, ))
 
     if p_submit == '' or p_submit != 'Transcode' or p_trnscd_cmd_method == '':
-        print '<tr><td>Transcode method:</td><td>'
-        print '<form method="get" action="">'
+        print('<tr><td>Transcode method:</td><td>')
+        print('<form method="get" action="">')
         print_select_transcode_method('', p_trnscd_cmd_method)
-        print '</tr>\n<tr><td>Output resolution (if video)</td><td>'
+        print('</tr>\n<tr><td>Output resolution (if video)</td><td>')
         print_select_resolution(p_trnscd_rez)
-        print '</td></tr><tr><td>&nbsp;</td><td>'
+        print('</td></tr><tr><td>&nbsp;</td><td>')
 
-        print '<input type="hidden" name="inode" value="%s">'       % (p_inode, )
-        print '<input type="hidden" name="pid" value="%s">'         % (p_pid, )
-        print '<input type="hidden" name="mediatype" value="%s">'   % (p_mediatype, )
-        print '<input type="hidden" name="title" value="%s">'       % (p_title, )
-        print '<input type="hidden" name="subtitle" value="%s">'    % (p_subtitle, )
-        print '<input type="hidden" name="page" value="transcode_inode">'
-        print '<input type="submit" name="submit" value="Transcode">'
-        print '</form>'
-        print '</table>'
-        print '</td></tr>\n</table>'
+        print('<input type="hidden" name="inode" value="%s">'       % (p_inode, ))
+        print('<input type="hidden" name="pid" value="%s">'         % (p_pid, ))
+        print('<input type="hidden" name="mediatype" value="%s">'   % (p_mediatype, ))
+        print('<input type="hidden" name="title" value="%s">'       % (p_title, ))
+        print('<input type="hidden" name="subtitle" value="%s">'    % (p_subtitle, ))
+        print('<input type="hidden" name="page" value="transcode_inode">')
+        print('<input type="submit" name="submit" value="Transcode">')
+        print('</form>')
+        print('</table>')
+        print('</td></tr>\n</table>')
     else:
         # load transcode submission queue
         trnscd_sub_queue = []
@@ -1999,9 +1999,9 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_subti
         if os.path.isfile(t_s_f_name):
             tsi = read_queue(trnscd_sub_queue, t_s_f_name)
             if tsi == -1:
-                print 'Info, cron job, couldn\'t read trancode submission file'
+                print('Info, cron job, couldn\'t read trancode submission file')
         else:
-            print 'Info, transcode submission queue hasn\'t been created'
+            print('Info, transcode submission queue hasn\'t been created')
 
 
         # if transcode was requested, append to queue
@@ -2019,9 +2019,9 @@ def page_transcode_inode(p_submit, p_inode, p_pid, p_mediatype, p_title, p_subti
         # append to transcode submissions
         trnscd_sub_queue.append(trnscd_item)
         if write_queue(trnscd_sub_queue, t_s_f_name) == -1:
-            print '<p><b>Error</b>, failed to write transcode submission queue</p>'
+            print('<p><b>Error</b>, failed to write transcode submission queue</p>')
         else:
-            print '<p><b>Success</b>, written transcode submission queue</p>'
+            print('<p><b>Success</b>, written transcode submission queue</p>')
 
 
 
@@ -2038,24 +2038,24 @@ def page_upgrade_check():
     githubhash_get_iplayer = get_github_hash_get_iplayer()
     githash_get_iplayer    = get_githash_get_iplayer()
 
-    print '<p>github hash of this file %s<br />\n' % (githubhash_self, )
-    print 'git hash of this file %s<br />\n' % (githash_self, )
-    print 'github hash of get_iplayer %s<br />\n' % (githubhash_get_iplayer, )
-    print 'git hash of local get_iplayer %s</p>' % (githash_get_iplayer, )
+    print('<p>github hash of this file %s<br />\n' % (githubhash_self, ))
+    print('git hash of this file %s<br />\n' % (githash_self, ))
+    print('github hash of get_iplayer %s<br />\n' % (githubhash_get_iplayer, ))
+    print('git hash of local get_iplayer %s</p>' % (githash_get_iplayer, ))
 
-    print '<p>'
+    print('<p>')
     if githubhash_self == githash_self:
-        print 'Great, this program is the same as the version on github.\n<br />\n'
+        print('Great, this program is the same as the version on github.\n<br />\n')
     else:
-        print 'This program appears to be out of date, please update it.\n<br />\n'
+        print('This program appears to be out of date, please update it.\n<br />\n')
 
 
     if githubhash_get_iplayer == githash_get_iplayer:
-        print 'Great, the get_iplayer program is the same as the version on github.\n<br />\n'
+        print('Great, the get_iplayer program is the same as the version on github.\n<br />\n')
     else:
-        print 'The get_iplayer program appears to be out of date, please update it.\n<br />\n'
+        print('The get_iplayer program appears to be out of date, please update it.\n<br />\n')
 
-    print '</p>'
+    print('</p>')
 
 
 #####################################################################################################################
@@ -2071,16 +2071,16 @@ def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
 
     if len(q_data) > 0:
         i = 0
-        print '  <table width="100%" >\n'
-        print '\t<tr>'
+        print('  <table width="100%" >\n')
+        print('\t<tr>')
         for key in queue_fields:
             if key[:3] == 'TT_':
-                print '\t\t<th align="center">%s</th>' % (key[3:], )
+                print('\t\t<th align="center">%s</th>' % (key[3:], ))
             else:
-                print '\t\t<th align="center">%s</th>' % (key, )
-        print '\t</tr>'
+                print('\t\t<th align="center">%s</th>' % (key, ))
+        print('\t</tr>')
         while i < len(q_data):
-            print '\t<tr>'
+            print('\t<tr>')
 
             for key in queue_fields:
                 if key in q_data[i]:
@@ -2089,39 +2089,39 @@ def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
                     elem = ''
 
                 if key == 'inode':
-                    print '\t\t<td align="center">'
+                    print('\t\t<td align="center">')
                     if 'inode' in q_data[i] and q_data[i]['inode'] != '':
-                        print '%s<br />\n<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s&subtitle=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'], )
+                        print('%s<br />\n<a href="?page=transcode_inode&inode=%s&pid=%s&mediatype=%s&title=%s&subtitle=%s">transcode</a><br />\n' % (q_data[i]['inode'], q_data[i]['inode'], q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'], ))
                 elif key == 'pid':
-                    print '\t\t<td align="center">%s<br />' % (elem, )
+                    print('\t\t<td align="center">%s<br />' % (elem, ))
                     if elem != '':
                         if show_delete:
-                            print '<a href="?page=queues&delete_pid=%s&delete_queue=%s">de-queue</a><br />\n' % (elem, queue_file, )
-                        print '<a href="?page=queues&pid=%s">show log</a><br />\n' % (elem, )
-                        print '<a href="?page=download&pid=%s&mediatype=%s&title=%s&subtitle=%s">redownload</a><br />\n' % (q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'],)
+                            print('<a href="?page=queues&delete_pid=%s&delete_queue=%s">de-queue</a><br />\n' % (elem, queue_file, ))
+                        print('<a href="?page=queues&pid=%s">show log</a><br />\n' % (elem, ))
+                        print('<a href="?page=download&pid=%s&mediatype=%s&title=%s&subtitle=%s">redownload</a><br />\n' % (q_data[i]['pid'], q_data[i]['mediatype'], q_data[i]['title'], q_data[i]['subtitle'],))
                     else:
-                        print '&nbsp;'
+                        print('&nbsp;')
                 elif key == 'unix_pid':
                     if elem != '':
-                        print '\t\t<td align="center"><a href="?page=kill&unix_pid=%s">kill %s</a>' % (elem, elem),
+                        print('\t\t<td align="center"><a href="?page=kill&unix_pid=%s">kill %s</a>' % (elem, elem),)
                     else:
-                        print '\t\t<td align="center">&nbsp;'
+                        print('\t\t<td align="center">&nbsp;')
                 elif key[:3] == 'TT_' and elem != '':
-                    print '\t\t<td align="center">%s' % (time.asctime(time.localtime(elem)), ),
+                    print('\t\t<td align="center">%s' % (time.asctime(time.localtime(elem)), ),)
                 elif 'title' in key:
-                    print '\t\t<td align="center">%s' % (base64.b64decode(elem), ),
+                    print('\t\t<td align="center">%s' % (base64.b64decode(elem), ),)
                 else:
-                    print '\t\t<td align="center">%s' % (str(elem), ),
-                print '      </td>'
+                    print('\t\t<td align="center">%s' % (str(elem), ),)
+                print('      </td>')
 
-            print '\t</tr>'
+            print('\t</tr>')
             i += 1
-            #print '\t<tr><td colspan="10"><hr /></td></tr>'
-        print '  </table>'
+            #print('\t<tr><td colspan="10"><hr /></td></tr>')
+        print('  </table>')
     else:
-        print 'empty'
+        print('empty')
 
-    print '',
+    print('',)
 
 
 #####################################################################################################################
@@ -2141,7 +2141,7 @@ def print_video_listing_rows(j_rows):
 
         prog_item = j_row
         if dbg_level > 1:
-            print '    <tr bgcolor="#ddd">\n      <td colspan="7">print_video_listing_rows: prog_item json is <pre>\n%s</pre></td>\n    </tr>' % (json.dumps( prog_item, sort_keys=True, indent=4, separators=(',', ': ') ), )
+            print('    <tr bgcolor="#ddd">\n      <td colspan="7">print_video_listing_rows: prog_item json is <pre>\n%s</pre></td>\n    </tr>' % (json.dumps( prog_item, sort_keys=True, indent=4, separators=(',', ': ') ), ))
 
         # extract program params and sanitise
         j_type = ''
@@ -2181,22 +2181,22 @@ def print_video_listing_rows(j_rows):
                     j_duration = prog_item['versions'][0]['duration']['text']
 
         if j_type != 'group_large':
-            print '    <tr>\n      <td>',
+            print('    <tr>\n      <td>',)
             if j_type == 'episode':
-                print '%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
-                print '<a href="?page=recommend&pid=%s&mediatype=%s">recommendations</a>' % (j_pid, p_mediatype, )
+                print('%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), ))
+                print('<a href="?page=recommend&pid=%s&mediatype=%s">recommendations</a>' % (j_pid, p_mediatype, ))
             if j_type == 'brand' or j_type == 'series':
             #if j_type == 'series':
-                print '<a href="?page=episodes&pid=%s&mediatype=%s">more episodes</a>' % (j_pid, p_mediatype, )
-            print '&nbsp;</td>'
+                print('<a href="?page=episodes&pid=%s&mediatype=%s">more episodes</a>' % (j_pid, p_mediatype, ))
+            print('&nbsp;</td>')
 
-            print '      <td>%s</td>' % (j_pid, )
-            print '      <td>%s</td>' % (j_type, )
-            print '      <td>%s</td>' % (j_title, )
-            print '      <td>%s</td>' % (j_subtitle, )
-            print '      <td>%s</td>' % (j_synsm )
-            print '      <td>%s</td>' % (j_duration, )
-            print '    </tr>'
+            print('      <td>%s</td>' % (j_pid, ))
+            print('      <td>%s</td>' % (j_type, ))
+            print('      <td>%s</td>' % (j_title, ))
+            print('      <td>%s</td>' % (j_subtitle, ))
+            print('      <td>%s</td>' % (j_synsm ))
+            print('      <td>%s</td>' % (j_duration, ))
+            print('    </tr>')
 
 
 #####################################################################################################################
@@ -2215,7 +2215,7 @@ def print_audio_listing_rows(j_rows):
             prog_item = j_row
 
         if dbg_level > 0:
-            print '    <tr bgcolor="#ddd">\n      <td colspan="7">print_audio_listing_rows: prog_item json is <pre>\n%s</pre></td>\n    </tr>' % (json.dumps( prog_item, sort_keys=True, indent=4, separators=(',', ': ') ), )
+            print('    <tr bgcolor="#ddd">\n      <td colspan="7">print_audio_listing_rows: prog_item json is <pre>\n%s</pre></td>\n    </tr>' % (json.dumps( prog_item, sort_keys=True, indent=4, separators=(',', ': ') ), ))
 
         # extract program params and sanitise
         j_type = ''
@@ -2251,63 +2251,63 @@ def print_audio_listing_rows(j_rows):
                     j_duration = prog_item['versions'][0]['duration']['text']
 
         if j_type != 'group_large':
-            print '    <tr>\n      <td>',
+            print('    <tr>\n      <td>',)
             if j_type == 'episode':
-                print '%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), )
-                print '<a href="?page=recommend&pid=%s&mediatype=%s">recommendations</a>' % (j_pid, p_mediatype, )
+                print('%s<br />' % (pid_to_download_link(j_pid, p_mediatype, b64_title, b64_subtitle), ))
+                print('<a href="?page=recommend&pid=%s&mediatype=%s">recommendations</a>' % (j_pid, p_mediatype, ))
             if j_type == 'brand' or j_type == 'series':
-                print '<a href="?page=episodes&pid=%s&mediatype=%s">more episodes</a>' % (j_pid, p_mediatype, )
-            print '&nbsp;</td>'
+                print('<a href="?page=episodes&pid=%s&mediatype=%s">more episodes</a>' % (j_pid, p_mediatype, ))
+            print('&nbsp;</td>')
 
-            print '      <td>%s</td>' % (j_pid, )
-            print '      <td>%s</td>' % (j_type, )
-            print '      <td>%s</td>' % (j_title, )
-            print '      <td>%s</td>' % (j_subtitle, )
-            print '      <td>%s</td>' % (j_synsm )
-            print '      <td>%s</td>' % (j_duration, )
-            print '    </tr>'
+            print('      <td>%s</td>' % (j_pid, ))
+            print('      <td>%s</td>' % (j_type, ))
+            print('      <td>%s</td>' % (j_title, ))
+            print('      <td>%s</td>' % (j_subtitle, ))
+            print('      <td>%s</td>' % (j_synsm ))
+            print('      <td>%s</td>' % (j_duration, ))
+            print('    </tr>')
 
 
 #####################################################################################################################
 def print_select_mediatype(p_mediatype):
     """prints an HTML SELECT of mediatypes"""
 
-    print '<select name="mediatype">\n'
+    print('<select name="mediatype">\n')
     for medty in MEDIATYPES:
         selected = ''
         if medty == p_mediatype:
             selected = ' selected'
-        print '\t<option value="%s" %s>%s</option>' % (medty, selected, medty, )
+        print('\t<option value="%s" %s>%s</option>' % (medty, selected, medty, ))
 
-    print '</select>'
+    print('</select>')
 
 
 #######################################################################################################################
 def print_select_resolution(p_trsncd_rez):
     """prints an HTML SELECT of standard resolutions for transcoding"""
 
-    print '<select name="trnscd_rez">'
+    print('<select name="trnscd_rez">')
     for rez in TRANSCODE_RESOLUTIONS:
         selected = ''
         if rez == p_trsncd_rez:
             selected = ' selected'
-        print '\t<option value="%s" %s>%s</option>' % (rez, selected, TRANSCODE_RESOLUTIONS[rez], )
-    print '</select>'
+        print('\t<option value="%s" %s>%s</option>' % (rez, selected, TRANSCODE_RESOLUTIONS[rez], ))
+    print('</select>')
 
 
 #####################################################################################################################
 def print_select_transcode_method(p_mediatype, p_trnscd_cmd_method):
     """prints an HTML SELECT of transcoding methods"""
 
-    print '<!-- in print_select_transcode_method -->'
-    print '<select name="trnscd_cmd_method">\n'
+    print('<!-- in print_select_transcode_method -->')
+    print('<select name="trnscd_cmd_method">\n')
     for tr_method in TRANSCODE_COMMANDS:
         if p_mediatype == '' or TRANSCODE_COMMANDS[tr_method]['mediatype'] == p_mediatype:
             selected = ''
             if tr_method == p_trnscd_cmd_method:
                 selected = ' selected'
-            print '    <option value="%s" %s>%s</option>' % (tr_method, selected, TRANSCODE_COMMANDS[tr_method]['name'], )
-    print '</select>'
+            print('    <option value="%s" %s>%s</option>' % (tr_method, selected, TRANSCODE_COMMANDS[tr_method]['name'], ))
+    print('</select>')
 
 
 #####################################################################################################################
@@ -2323,7 +2323,7 @@ def read_queue(queue, queue_file_name):
             queue_count = len(queue)
         except OSError:
             # ignore when file can't be opened
-            print 'Error, read_queue couldn\t open file %s for reading' % (queue_file_name, )
+            print('Error, read_queue couldn\t open file %s for reading' % (queue_file_name, ))
 
     return queue_count
 
@@ -2338,32 +2338,32 @@ def search_show_episodes_audio(p_pid, pid_type, p_title):
         url_key = 'search_episodes_audio'
         beforesubst = URL_LIST[url_key]
         url_with_query = beforesubst.format(p_pid)
-        #print 'ssev: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />' % (p_brand, p_mediatype, url_key, )
+        #print('ssev: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />' % (p_brand, p_mediatype, url_key, ))
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
         json_data = json.load(opener.open(url_with_query))
 
         if dbg_level > 0:
-            print '<tr bgcolor="#ddd"><td colspan="7"><pre>'
-            print 'searching for %s - pid %s of type %s - using URL %s' % (p_title, p_pid, pid_type, url_with_query, )
+            print('<tr bgcolor="#ddd"><td colspan="7"><pre>')
+            print('searching for %s - pid %s of type %s - using URL %s' % (p_title, p_pid, pid_type, url_with_query, ))
             if dbg_level > 1:
-                print '=== episode search result ==='
-                print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '</pre></td></tr>'
+                print('=== episode search result ===')
+                print('%s' % (json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+            print('</pre></td></tr>')
 
 
-        print '    <tr>'
-        print '      <th colspan="7"><br />Audio episodes for <i>%s</i> (%s)</th>' % (base64.b64decode(p_title), p_pid, )
-        print '    </tr>'
-        print '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
+        print('    <tr>')
+        print('      <th colspan="7"><br />Audio episodes for <i>%s</i> (%s)</th>' % (base64.b64decode(p_title), p_pid, ))
+        print('    </tr>')
+        print('      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>')
         #if 'episode_recommendations' in json_data and 'elements' in json_data['episode_recommendations']:
         if 'programme_episodes' in json_data:
             if 'elements' in json_data['programme_episodes']:
                 print_audio_listing_rows(json_data['programme_episodes']['elements'])
 
     except urllib2.HTTPError:
-        print 'search_show_episodes_audio: Exception urllib2.HTTPError'
+        print('search_show_episodes_audio: Exception urllib2.HTTPError')
 
 
 #####################################################################################################################
@@ -2376,32 +2376,32 @@ def search_show_episodes_video(p_pid, pid_type, p_title):
         url_key = 'search_episodes_video'
         beforesubst = URL_LIST[url_key]
         url_with_query = beforesubst.format(p_pid)
-        #print 'ssev: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />' % (p_brand, p_mediatype, url_key, )
+        #print('ssev: p_pid is %s, p_mediatype %s,  url_key is %s\n<br />' % (p_brand, p_mediatype, url_key, ))
 
         opener = urllib2.build_opener()
         opener.addheaders = [('User-agent', USAG)]
         json_data = json.load(opener.open(url_with_query))
 
         if dbg_level > 0:
-            print '<tr bgcolor="#ddd"><td colspan="7"><pre>'
-            print 'searching for %s - pid %s of type %s - using URL %s' % (p_title, p_pid, pid_type, url_with_query, )
+            print('<tr bgcolor="#ddd"><td colspan="7"><pre>')
+            print('searching for %s - pid %s of type %s - using URL %s' % (p_title, p_pid, pid_type, url_with_query, ))
             if dbg_level > 1:
-                print '=== episode search result ==='
-                print json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )
-            print '</pre></td></tr>'
+                print('=== episode search result ===')
+                print('%s' % (json.dumps( json_data, sort_keys=True, indent=4, separators=(',', ': ') )), )
+            print('</pre></td></tr>')
 
 
-        print '    <tr>'
-        print '      <th colspan="7"><br />Video episodes for <i>%s</i> (%s)</th>' % (base64.b64decode(p_title), p_pid, )
-        print '    </tr>'
-        print '      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>'
+        print('    <tr>')
+        print('      <th colspan="7"><br />Video episodes for <i>%s</i> (%s)</th>' % (base64.b64decode(p_title), p_pid, ))
+        print('    </tr>')
+        print('      <th>Action</th><th>PID</th><th>Type</th><th>Title</th><th>Subtitle</th><th>Synopsis</th><th>Duration</th>')
         #if 'episode_recommendations' in json_data and 'elements' in json_data['episode_recommendations']:
         if 'programme_episodes' in json_data:
             if 'elements' in json_data['programme_episodes']:
                 print_video_listing_rows(json_data['programme_episodes']['elements'])
 
     except urllib2.HTTPError:
-        print 'search_show_episodes_video: Exception urllib2.HTTPError'
+        print('search_show_episodes_video: Exception urllib2.HTTPError')
 
 
 #####################################################################################################################
@@ -2413,14 +2413,14 @@ def web_interface():
 
     illegal_param_count = 0
 
-    #print 'Content-Type: text/plain'    # plain text for extreme debugging
-    print 'Content-Type: text/html'     # HTML is following
-    print                               # blank line, end of headers
+    #print('Content-Type: text/plain')  # plain text for extreme debugging
+    print('Content-Type: text/html')    # HTML is following
+    print('')                           # blank line, end of headers
 
-    print ''' <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-  "http://www.w3.org/TR/html4/loose.dtd">'''
+    print(''' <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">''')
 
-    print '''
+    print('''
 <html>
   <head>
     <title>web get iplayer</title>
@@ -2446,7 +2446,7 @@ table td, table th {
 
   </head>
 <body>
-'''
+''')
 
     enable_dev_mode = 0
     if 'development' in CGI_PARAMS:
@@ -2456,20 +2456,20 @@ table td, table th {
         dbg_level = int(CGI_PARAMS.getvalue('dbg_level'))
 
     if dbg_level > 0:
-        print 'Python errors at <a href="/python_errors/?C=M;O=A" target="_new">/python_errors (new window)</a><br />'
+        print('Python errors at <a href="/python_errors/?C=M;O=A" target="_new">/python_errors (new window)</a><br />')
 
 
-    print '<pre>'
+    print('<pre>')
     config_bad = check_load_config_file()
-    print '</pre>'
+    print('</pre>')
     if config_bad < 0:
-        print '<br /><br />cgi-bin cannot do anything useful\n<br />'
+        print('<br /><br />cgi-bin cannot do anything useful\n<br />')
     elif config_bad > 0:
-        print '<a href="?page=settings">Settings</a>&nbsp;&nbsp;&nbsp;'
-        print '<br />\n<br />'
+        print('<a href="?page=settings">Settings</a>&nbsp;&nbsp;&nbsp;')
+        print('<br />\n<br />')
         page_settings()
     else:
-        print '''<a href="?page=downloaded">Downloaded</a>&nbsp;&nbsp;&nbsp;
+        print('''<a href="?page=downloaded">Downloaded</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=download">Download</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=favourites_list">Favourites</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=highlights">Highlights</a>&nbsp;&nbsp;&nbsp;
@@ -2477,12 +2477,12 @@ table td, table th {
 <a href="?page=queues">Queues & Logs</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=search">Search</a>&nbsp;&nbsp;&nbsp;
 <a href="?page=settings">Settings</a>&nbsp;&nbsp;&nbsp;
-<a href="?page=upgrade_check">Upgrade Check</a>&nbsp;&nbsp;&nbsp;'''
+<a href="?page=upgrade_check">Upgrade Check</a>&nbsp;&nbsp;&nbsp;''')
 
         if dbg_level or enable_dev_mode:
-            print '<a href="?page=development">Development</a>&nbsp;&nbsp;&nbsp;'
-            print '<a href="/python_errors/" target=_new>Python Errors</a>&nbsp;&nbsp;&nbsp;'
-        print '<br />\n<br />'
+            print('<a href="?page=development">Development</a>&nbsp;&nbsp;&nbsp;')
+            print('<a href="/python_errors/" target=_new>Python Errors</a>&nbsp;&nbsp;&nbsp;')
+        print('<br />\n<br />')
 
 
         ########
@@ -2492,14 +2492,14 @@ table td, table th {
         if 'delete_queue' in CGI_PARAMS:
             p_delete_queue = CGI_PARAMS.getvalue('delete_queue')
             if not bool(re.compile('^[0-9A-Za-z.]+\\Z').match(p_delete_queue)):
-                print 'p_delete_queue is illegal\n'
+                print('p_delete_queue is illegal\n')
                 illegal_param_count += 1
 
         p_delete_pid = ''
         if 'delete_pid' in CGI_PARAMS:
             p_delete_pid = CGI_PARAMS.getvalue('delete_pid')
             if not bool(re.compile('^[0-9A-Za-z.]+\\Z').match(p_delete_pid)):
-                print 'p_delete_pid is illegal\n'
+                print('p_delete_pid is illegal\n')
                 illegal_param_count += 1
 
 
@@ -2507,7 +2507,7 @@ table td, table th {
         if 'dir' in CGI_PARAMS:
             p_dir = CGI_PARAMS.getvalue('dir')
             if not bool(re.compile('^[0-9A-Za-z_]+\\Z').match(p_dir)):
-                print 'p_dir is illegal\n'
+                print('p_dir is illegal\n')
                 illegal_param_count += 1
 
         # FIXME! move this into downloaded() page
@@ -2520,13 +2520,13 @@ table td, table th {
             if inode_list:
                 delete_files_by_inode(p_dir, inode_list, del_img_flag)
             else:
-                print '<p><b>Error, inode list was empty, couldn\'t delete</b></p>'
+                print('<p><b>Error, inode list was empty, couldn\'t delete</b></p>')
 
         p_file = ''
         if 'file' in CGI_PARAMS:
             p_file = CGI_PARAMS.getvalue('file')
             if not bool(re.compile('^[0-9A-Za-z-_.]+\\Z').match(p_file)):
-                print 'p_file is illegal\n'
+                print('p_file is illegal\n')
                 illegal_param_count += 1
 
         p_force = 'n'
@@ -2537,14 +2537,14 @@ table td, table th {
         if 'inode' in CGI_PARAMS:
             p_inode = CGI_PARAMS.getvalue('inode')
             if not bool(re.compile('^[0-9.]+\\Z').match(p_inode)):
-                print 'p_inode is illegal\n'
+                print('p_inode is illegal\n')
                 illegal_param_count += 1
 
         p_pid = ''
         if 'pid' in CGI_PARAMS:
             p_pid = CGI_PARAMS.getvalue('pid')
             if not bool(re.compile('^[0-9A-Za-z.]+\\Z').match(p_pid)):
-                print 'p_pid is illegal\n'
+                print('p_pid is illegal\n')
                 illegal_param_count += 1
 
         p_pid_type = ''
@@ -2555,7 +2555,7 @@ table td, table th {
         if 'mediatype' in CGI_PARAMS:
             p_mediatype = CGI_PARAMS.getvalue('mediatype')
             if p_mediatype not in MEDIATYPES:
-                print 'p_mediatype is illegal\n'
+                print('p_mediatype is illegal\n')
                 illegal_param_count += 1
 
         p_sought = ''
@@ -2584,7 +2584,7 @@ table td, table th {
             p_trnscd_cmd_method = CGI_PARAMS.getvalue('trnscd_cmd_method')
             # check that user provided known transcode method
             if p_trnscd_cmd_method != '' and (p_trnscd_cmd_method not in TRANSCODE_COMMANDS):
-                print 'p_trnscd_cmd_method is illegal'
+                print('p_trnscd_cmd_method is illegal')
                 illegal_param_count += 1
 
         p_trnscd_rez = ''
@@ -2659,7 +2659,7 @@ table td, table th {
             if p_page == 'upgrade_check':
                 page_upgrade_check()
 
-    print '</body>\n</html>'
+    print('</body>\n</html>')
 
 
 #####################################################################################################################
@@ -2674,7 +2674,7 @@ def write_queue(queue, queue_file_name):
 
         error_flag = 0
     except OSError:
-        print 'Error, write_queue couldn\t open file %s for writing' % (queue_file_name, )
+        print('Error, write_queue couldn\t open file %s for writing' % (queue_file_name, ))
 
     return error_flag
 
@@ -2691,14 +2691,14 @@ if len(sys.argv) <= 1:
 else:
     # need config to be loaded
     if check_load_config_file() != 0:
-        print 'Error, checking/loading config and system check failed, use web interface'
+        print('Error, checking/loading config and system check failed, use web interface')
         exit(1)
 
     if sys.argv[1] == '-cron':
         cron_run_download()
         cron_run_transcode()
     else:
-        print 'Error, unknown argument %s' % (sys.argv[1], )
+        print('Error, unknown argument %s' % (sys.argv[1], ))
 
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
