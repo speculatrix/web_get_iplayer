@@ -677,7 +677,7 @@ def cron_run_download():
             cmd = cmd + ' --type ' + 'radio'
 
         # set quality mode
-        cmd = cmd + ' --modes ' + first_item['quality']
+        cmd = cmd + ' --quality ' + first_item['quality']
 
         # set the pid
         cmd = cmd + ' --pid ' + first_item['pid']
@@ -2108,7 +2108,11 @@ def print_queue_as_html_table(q_data, queue_fields, show_delete, queue_file):
                 elif key[:3] == 'TT_' and elem != '':
                     print('\t\t<td align="center">%s' % (time.asctime(time.localtime(elem)), ),)
                 elif 'title' in key:
-                    print('\t\t<td align="center">%s' % (base64.b64decode(elem), ),)
+                    if elem != '':
+                        print('\t\t<td align="center">%s' % (str(base64.b64decode(elem)), ),)
+                        #print('\t\t<td align="center">%s' % (elem),)
+                    else:
+                        print('\t\t<td align="center">&nbsp;')
                 else:
                     print('\t\t<td align="center">%s' % (str(elem), ),)
                 print('      </td>')
