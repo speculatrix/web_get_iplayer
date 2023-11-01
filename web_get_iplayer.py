@@ -92,7 +92,7 @@ SETTINGS_SECTION  = 'user'
 # default values of the settings when being created
 SETTINGS_DEFAULTS = { 'base_url'            : '/iplayer'                        , # relative URL direct to the iplayer files
                       'directory'           : '1'                               , # automatically store downloads in sub-directory
-                      'download_args'       : '--nopurge --nocopyright --raw --thumb --thumbsize 150',
+                      'download_args'       : '--nocopyright --raw --thumb --thumbsize 192',
                       'flash_height'        : '720'                             , # standard flashhd BBC video rez
                       'flash_width'         : '1280'                            , # ...
                       'get_iplayer'         : PATH_OF_SCRIPT + '/get_iplayer'   , # full get_iplayer path
